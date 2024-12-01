@@ -5,6 +5,7 @@ A Git repository setup for storing encrypted markdown files. Files in the `priva
 ## Features
 
 - Automatic encryption of markdown files in `private/` directory during commits
+- Support for multiple GPG recipients (all recipients can decrypt files)
 - Automatic decryption of files after pulling or checking out
 - Clean working directory - only see decrypted `.md` files while working
 - Validation system to prevent accidental commits of unencrypted files
@@ -51,13 +52,18 @@ For more GPG commands and usage, see the [GPG Cheat Sheet](https://devhints.io/g
    node install.js
    ```
 
-3. Configure your GPG key in `.env`:
+3. Configure your GPG keys in `.env`:
    ```bash
-   # Required: Your GPG key ID or email for encryption
-   GPG_RECIPIENT=your.email@example.com
+   # Required: Comma-separated list of GPG recipients who can decrypt files
+   GPG_RECIPIENTS=user1@example.com,user2@example.com
    
-   # Optional: Specific GPG key ID if you have multiple keys
-   GPG_KEY_ID=3AA5C34371567BD2
+   # Optional: Specific GPG key ID for signing if you have multiple keys
+   # GPG_KEY_ID=3AA5C34371567BD2
+   
+   # File patterns to encrypt/decrypt (comma-separated)
+   # Default: * (all files)
+   # Example: *.md,*.txt,*.json
+   ENCRYPT_PATTERNS=*.md,*.txt
    ```
 
 ## Usage
@@ -76,6 +82,7 @@ For more GPG commands and usage, see the [GPG Cheat Sheet](https://devhints.io/g
    ```
    - The pre-commit hook automatically encrypts your files
    - Only the encrypted `.gpg` files are committed
+   - Each recipient listed in GPG_RECIPIENTS can decrypt the files
 
 3. Pull or push changes:
    ```bash
@@ -118,15 +125,17 @@ For more GPG commands and usage, see the [GPG Cheat Sheet](https://devhints.io/g
 ### Common GPG Issues
 
 1. "No public key" error:
-   - Verify your GPG_RECIPIENT in .env matches your key
-   - Check if the key exists: `gpg --list-keys`
+   - Verify your GPG_RECIPIENTS in .env matches your keys
+   - Check if the keys exist: `gpg --list-keys`
+   - Make sure all recipients' public keys are imported
 
 2. Decryption fails:
    - Ensure you have the private key: `gpg --list-secret-keys`
    - Verify the key hasn't expired
+   - Check you're one of the recipients in GPG_RECIPIENTS
 
 3. Multiple keys:
-   - Use GPG_KEY_ID in .env to specify exact key
+   - Use GPG_KEY_ID in .env to specify exact signing key
    - Format: last 16 characters of key ID
 
 ### File Issues
@@ -151,6 +160,8 @@ For more GPG commands and usage, see the [GPG Cheat Sheet](https://devhints.io/g
 - Use strong passphrases for your GPG keys
 - Consider using subkeys for different machines
 - Regularly verify your GPG setup is working
+- Ensure all recipients' public keys are trusted
+- Review GPG_RECIPIENTS list periodically
 
 ## Contributing
 

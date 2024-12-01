@@ -5,11 +5,24 @@ const { execSync } = require('child_process')
 const { existsSync } = require('fs')
 const path = require('path')
 const encryptFile = require('./encrypt-file')
+const minimatch = require('minimatch')
 
-// get all staged markdown files in private/
+// get patterns from env or default to all files
+const patterns = (process.env.ENCRYPT_PATTERNS || '*')
+  .split(',')
+  .map(p => p.trim())
+
+// get all staged files in private/
 const stagedFiles = execSync('git diff --cached --name-only', { encoding: 'utf8' })
   .split('\n')
-  .filter(file => file.startsWith('private/') && file.endsWith('.md') && !file.endsWith('.md.gpg'))
+  .filter(file => {
+    if (!file.startsWith('private/') || file.endsWith('.gpg')) {
+      return false
+    }
+    // check if file matches any pattern
+    const filename = path.basename(file)
+    return patterns.some(pattern => minimatch(filename, pattern))
+  })
 
 for (const file of stagedFiles) {
   const encryptedFile = `${file}.gpg`

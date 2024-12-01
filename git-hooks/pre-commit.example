@@ -14,7 +14,11 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# stage the new archive
-git add .archives/*.tar.gpg
+# check if we have any untracked archives
+if [ -n "$(git ls-files --others --exclude-standard .archives/)" ]; then
+  # stage and amend the commit with the new archive
+  git add .archives/*.tar.gpg
+  git commit --amend --no-edit
+fi
 
 exit 0 

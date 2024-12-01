@@ -23,7 +23,7 @@ try {
   for (const file of hookFiles) {
     if (file.endsWith('.example')) {
       const hookName = file.replace('.example', '');
-      execSync(`cp git-hooks/${file} .git/hooks/${hookName}`, { stdio: 'inherit' });
+      execSync(`mv git-hooks/${file} .git/hooks/${hookName}`, { stdio: 'inherit' });
     }
   }
   execSync('chmod +x .git/hooks/*', { stdio: 'inherit' });

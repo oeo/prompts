@@ -54,8 +54,9 @@ For more GPG commands and usage, see the [GPG Cheat Sheet](https://devhints.io/g
 
 3. Configure your GPG keys in `.env`:
    ```bash
-   # Required: Comma-separated list of GPG recipients who can decrypt files
-   GPG_RECIPIENTS=user1@example.com,user2@example.com
+   # Required: Comma-separated list of GPG recipients (emails or key IDs) who can decrypt files
+   # Can use either email or last 16 characters of key ID for each recipient
+   GPG_RECIPIENTS=user1@example.com,3AA5C34371567BD2
    
    # Optional: Specific GPG key ID for signing if you have multiple keys
    # GPG_KEY_ID=3AA5C34371567BD2

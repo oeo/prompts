@@ -7,10 +7,10 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# encrypt files in private directory
-node bin/pre-commit-encrypt.js
+# create encrypted archive
+node bin/create-encrypted-archive.js
 if [ $? -ne 0 ]; then
-  echo "error: pre-commit encryption failed"
+  echo "error: failed to create encrypted archive"
   exit 1
 fi
 

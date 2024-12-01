@@ -1,4 +1,4 @@
 #!/bin/sh
 
-# Decrypt files and clean up GPG files after checkout
-exec ./bin/cleanup-private-dir.js 
+# restore from latest archive
+node bin/restore-from-archive.js 

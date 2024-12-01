@@ -2,11 +2,38 @@
 
 require('dotenv').config()
 const { execSync } = require('child_process')
-const { existsSync, statSync, lstatSync } = require('fs')
+const { existsSync, statSync, lstatSync, mkdirSync } = require('fs')
 const path = require('path')
 
 function log(message) {
   console.log(message)
+}
+
+function checkDirs() {
+  const privateDir = path.join(process.cwd(), 'private')
+  const archiveDir = path.join(process.cwd(), '.archives')
+
+  // check/create private directory
+  if (!existsSync(privateDir)) {
+    try {
+      log('creating private directory...')
+      mkdirSync(privateDir, { recursive: true })
+    } catch (error) {
+      log(`error: failed to create private directory: ${error.message}`)
+      process.exit(1)
+    }
+  }
+
+  // check/create archives directory
+  if (!existsSync(archiveDir)) {
+    try {
+      log('creating archives directory...')
+      mkdirSync(archiveDir, { recursive: true })
+    } catch (error) {
+      log(`error: failed to create archives directory: ${error.message}`)
+      process.exit(1)
+    }
+  }
 }
 
 function checkEnv() {
@@ -37,53 +64,43 @@ function checkGpg() {
       process.exit(1)
     }
 
-    // test encryption/decryption
-    const testFile = '.encryption-test'
-    const testEncrypted = `${testFile}.gpg`
+    // test encryption/decryption with archive
+    const testDir = path.join(process.cwd(), '.test-archive')
+    const testFile = path.join(testDir, 'test.txt')
+    const testTar = path.join(testDir, 'test.tar')
+    const testEncrypted = `${testTar}.gpg`
     
     try {
-      // create test file
-      execSync(`echo "test" > ${testFile}`)
+      // create test directory and file
+      mkdirSync(testDir, { recursive: true })
+      execSync(`echo "test" > "${testFile}"`)
+
+      // create test archive
+      execSync(`tar -cf "${testTar}" -C "${testDir}" test.txt`)
 
       // build recipient args
       const recipientArgs = recipients.map(r => `-r ${r}`).join(' ')
       
       // test encryption
       const encryptCmd = keyId 
-        ? `gpg --yes --trust-model always --local-user ${keyId} ${recipientArgs} -e -o ${testEncrypted} ${testFile}`
-        : `gpg --yes --trust-model always ${recipientArgs} -e -o ${testEncrypted} ${testFile}`
+        ? `gpg --yes --trust-model always --local-user ${keyId} ${recipientArgs} -e -o "${testEncrypted}" "${testTar}"`
+        : `gpg --yes --trust-model always ${recipientArgs} -e -o "${testEncrypted}" "${testTar}"`
       
       execSync(encryptCmd)
 
       // test decryption
       const decryptCmd = keyId
-        ? `gpg --yes --local-user ${keyId} -d -o /dev/null ${testEncrypted}`
-        : `gpg --yes -d -o /dev/null ${testEncrypted}`
+        ? `gpg --yes --local-user ${keyId} -d -o /dev/null "${testEncrypted}"`
+        : `gpg --yes -d -o /dev/null "${testEncrypted}"`
       
       execSync(decryptCmd)
     } finally {
-      // cleanup
-      execSync(`rm -f ${testFile} ${testEncrypted}`)
+      // cleanup test directory
+      execSync(`rm -rf "${testDir}"`)
     }
   } catch (error) {
     log('error: GPG is not properly installed or configured')
     log(`details: ${error.message}`)
-    process.exit(1)
-  }
-}
-
-function checkStagedFiles() {
-  try {
-    const staged = execSync('git diff --cached --name-only', { encoding: 'utf8' })
-    for (const file of staged.split('\n')) {
-      if (file.startsWith('private/') && file.endsWith('.md') && !file.endsWith('.md.gpg')) {
-        log(`error: attempting to commit unencrypted markdown file: ${file}`)
-        log(`hint: remove it from staging with: git reset HEAD ${file}`)
-        process.exit(1)
-      }
-    }
-  } catch (error) {
-    log('error: failed to check staged files')
     process.exit(1)
   }
 }
@@ -112,10 +129,8 @@ function checkHooks() {
 
 function checkScripts() {
   const requiredScripts = [
-    'bin/encrypt-file.js',
-    'bin/decrypt-file.js',
-    'bin/pre-commit-encrypt.js',
-    'bin/cleanup-private-dir.js'
+    'bin/create-encrypted-archive.js',
+    'bin/restore-from-archive.js'
   ]
 
   for (const script of requiredScripts) {
@@ -138,26 +153,29 @@ function checkGitignore() {
   }
 
   const content = execSync('cat .gitignore', { encoding: 'utf8' })
-  if (!content.includes('private/**/*.md')) {
-    log('error: .gitignore missing rule for unencrypted markdown files')
-    process.exit(1)
-  }
+  const required = [
+    'private/*',
+    '.archives/temp.tar',
+    '!.archives/*.tar.gpg'
+  ]
 
-  if (!content.includes('!private/**/*.md.gpg')) {
-    log('error: .gitignore missing exception for encrypted files')
-    process.exit(1)
+  for (const rule of required) {
+    if (!content.includes(rule)) {
+      log(`error: .gitignore missing rule: ${rule}`)
+      process.exit(1)
+    }
   }
 }
 
 // Run all checks
+log('checking directories...')
+checkDirs()
+
 log('checking environment...')
 checkEnv()
 
 log('checking GPG setup...')
 checkGpg()
-
-log('checking staged files...')
-checkStagedFiles()
 
 log('checking git hooks...')
 checkHooks()

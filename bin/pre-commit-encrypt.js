@@ -2,10 +2,16 @@
 
 require('dotenv').config()
 const { execSync } = require('child_process')
-const { existsSync } = require('fs')
+const { existsSync, mkdirSync } = require('fs')
 const path = require('path')
 const encryptFile = require('./encrypt-file')
 const minimatch = require('minimatch')
+
+// ensure private directory exists
+const privateDir = path.join(process.cwd(), 'private')
+if (!existsSync(privateDir)) {
+  mkdirSync(privateDir, { recursive: true })
+}
 
 // get patterns from env or default to all files
 const patterns = (process.env.ENCRYPT_PATTERNS || '*')

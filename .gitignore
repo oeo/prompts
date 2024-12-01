@@ -43,5 +43,10 @@ yarn-lock.json
 
 whisper*
 
-private/**/*.md
-!private/**/*.md.gpg
+private/*
+
+# Ignore temp files
+.archives/temp.tar
+
+# Don't ignore encrypted archives
+!.archives/*.tar.gpg

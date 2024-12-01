@@ -3,18 +3,25 @@
 const { execSync } = require('child_process');
 
 try {
-  // run validation first
+  // install dependencies
+  console.log('Installing dependencies...');
+  execSync('npm install', { stdio: 'inherit' });
+
+  // run validation
+  console.log('Validating setup...');
   execSync('node bin/validate-encryption-setup.js', { stdio: 'inherit' });
   
   // initialize archive
+  console.log('Initializing archive...');
   execSync('node bin/init-archive.js', { stdio: 'inherit' });
   
   // install git hooks
+  console.log('Installing git hooks...');
   execSync('cp git-hooks/* .git/hooks/', { stdio: 'inherit' });
   execSync('chmod +x .git/hooks/*', { stdio: 'inherit' });
   
-  console.log('installation complete!');
+  console.log('Installation complete!');
 } catch (error) {
-  console.error(`installation failed: ${error.message}`);
+  console.error(`Installation failed: ${error.message}`);
   process.exit(1);
 } 

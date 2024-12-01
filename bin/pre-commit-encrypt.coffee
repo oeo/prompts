@@ -17,7 +17,7 @@ walk_dir = (dir) ->
     
     if stat?.isDirectory()
       results = results.concat walk_dir file
-    else if file.endsWith '.md'
+    else if file.endsWith('.md') and not existsSync("#{file}.gpg")
       results.push file
       
   results

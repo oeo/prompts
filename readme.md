@@ -9,6 +9,7 @@ A Git repository setup for storing encrypted markdown files. Files in the `priva
 - Clean working directory - only see decrypted `.md` files while working
 - Validation system to prevent accidental commits of unencrypted files
 - Environment-based configuration for GPG key selection
+- Single dependency (dotenv) - lightweight and maintainable
 
 ## Prerequisites
 
@@ -16,7 +17,28 @@ A Git repository setup for storing encrypted markdown files. Files in the `priva
 - GPG installed and configured with your key
 - Git
 
-## Setup
+## GPG Setup
+
+If you're new to GPG, here's a quick start:
+
+1. Generate a new GPG key:
+   ```bash
+   gpg --full-generate-key
+   ```
+
+2. List your keys to get the ID or email:
+   ```bash
+   gpg --list-secret-keys --keyid-format LONG
+   ```
+
+3. Export your public key for sharing:
+   ```bash
+   gpg --armor --export your.email@example.com
+   ```
+
+For more GPG commands and usage, see the [GPG Cheat Sheet](https://devhints.io/gpg)
+
+## Installation
 
 1. Clone the repository:
    ```bash
@@ -29,13 +51,14 @@ A Git repository setup for storing encrypted markdown files. Files in the `priva
    node install.js
    ```
 
-3. Edit `.env` and set your GPG key:
+3. Configure your GPG key in `.env`:
    ```bash
-   # Open .env and set GPG_RECIPIENT to your GPG key email or ID
-   vim .env
+   # Required: Your GPG key ID or email for encryption
+   GPG_RECIPIENT=your.email@example.com
+   
+   # Optional: Specific GPG key ID if you have multiple keys
+   GPG_KEY_ID=3AA5C34371567BD2
    ```
-
-That's it! The installation script handles everything else automatically.
 
 ## Usage
 
@@ -51,7 +74,7 @@ That's it! The installation script handles everything else automatically.
    git add .
    git commit -m "update: add new notes"
    ```
-   - The pre-commit hook will automatically encrypt your files
+   - The pre-commit hook automatically encrypts your files
    - Only the encrypted `.gpg` files are committed
 
 3. Pull or push changes:
@@ -74,12 +97,60 @@ That's it! The installation script handles everything else automatically.
   - Clean working directory (no `.gpg` files)
   - Handles pull, merge, checkout, rebase, and push operations
 
-## Directory Structure
+## Project Structure
 
-- `private/` - Directory for markdown files (automatically encrypted)
-- `bin/` - Helper scripts for encryption/decryption
-- `git-hooks/` - Example Git hooks for installation
-- `.env` - Configuration for GPG recipient
+```
+.
+├── private/           # Your markdown files (auto-encrypted)
+├── bin/              # Helper scripts
+│   ├── cleanup-private-dir.js
+│   ├── decrypt-file.js
+│   ├── encrypt-file.js
+│   ├── pre-commit-encrypt.js
+│   └── validate-encryption-setup.js
+├── git-hooks/        # Git hook templates
+├── .env              # GPG configuration
+└── install.js        # Setup script
+```
+
+## Troubleshooting
+
+### Common GPG Issues
+
+1. "No public key" error:
+   - Verify your GPG_RECIPIENT in .env matches your key
+   - Check if the key exists: `gpg --list-keys`
+
+2. Decryption fails:
+   - Ensure you have the private key: `gpg --list-secret-keys`
+   - Verify the key hasn't expired
+
+3. Multiple keys:
+   - Use GPG_KEY_ID in .env to specify exact key
+   - Format: last 16 characters of key ID
+
+### File Issues
+
+- If files aren't encrypting:
+  ```bash
+  # Manually run validation
+  node bin/validate-encryption-setup.js
+  ```
+
+- If .gpg files remain:
+  ```bash
+  # Clean up manually
+  node bin/cleanup-private-dir.js
+  ```
+
+## Security Best Practices
+
+- Never commit unencrypted `.md` files
+- Keep your `.env` file private (it's gitignored)
+- Regularly backup your GPG keys
+- Use strong passphrases for your GPG keys
+- Consider using subkeys for different machines
+- Regularly verify your GPG setup is working
 
 ## Contributing
 
@@ -89,14 +160,14 @@ That's it! The installation script handles everything else automatically.
 4. Push to the branch
 5. Create a Pull Request
 
-## Security Notes
-
-- Never commit unencrypted `.md` files
-- Keep your `.env` file private
-- Regularly verify your GPG setup
-- Back up your GPG keys securely
-
 ## License
 
 MIT
+
+## Support
+
+- Open an issue for bugs or feature requests
+- PRs welcome
+- Star the repo if you find it useful!
+
 

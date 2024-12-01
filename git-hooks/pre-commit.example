@@ -1,7 +1,17 @@
 #!/bin/sh
 
-# First run validations
-./bin/validate-encryption-setup.js || exit 1
+# validate gpg setup
+node bin/validate-encryption-setup.js
+if [ $? -ne 0 ]; then
+  echo "error: gpg setup validation failed"
+  exit 1
+fi
 
-# If validations pass, run the encryption
-exec ./bin/pre-commit-encrypt.js 
+# encrypt files in private directory
+node bin/pre-commit-encrypt.js
+if [ $? -ne 0 ]; then
+  echo "error: pre-commit encryption failed"
+  exit 1
+fi
+
+exit 0 

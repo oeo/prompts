@@ -1,42 +1,38 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process');
-const { existsSync, readdirSync, statSync } = require('fs');
-const path = require('path');
+require('dotenv').config()
+const { execSync } = require('child_process')
+const { existsSync } = require('fs')
+const path = require('path')
+const encryptFile = require('./encrypt-file')
 
-function walkDir(dir) {
-  const results = [];
-  const list = readdirSync(dir);
+// get all staged markdown files in private/
+const stagedFiles = execSync('git diff --cached --name-only', { encoding: 'utf8' })
+  .split('\n')
+  .filter(file => file.startsWith('private/') && file.endsWith('.md') && !file.endsWith('.md.gpg'))
 
-  for (const file of list) {
-    const filePath = path.resolve(dir, file);
-    const stat = statSync(filePath);
-
-    if (stat?.isDirectory()) {
-      results.push(...walkDir(filePath));
-    } else if (file.endsWith('.md') && !existsSync(`${filePath}.gpg`)) {
-      results.push(filePath);
-    }
-  }
-
-  return results;
-}
-
-const privateDir = path.resolve(__dirname, '../private');
-if (!existsSync(privateDir)) {
-  console.log('private directory not found');
-  process.exit(1);
-}
-
-const markdownFiles = walkDir(privateDir);
-for (const file of markdownFiles) {
-  const encryptedFile = `${file}.gpg`;
-
+for (const file of stagedFiles) {
+  const encryptedFile = `${file}.gpg`
+  
   try {
-    execSync(`${__dirname}/encrypt-file.js ${file}`, { stdio: 'inherit' });
-    execSync(`git add ${encryptedFile}`, { stdio: 'inherit' });
+    // encrypt the file
+    if (!encryptFile(file, encryptedFile)) {
+      console.error(`failed to encrypt ${file}`)
+      process.exit(1)
+    }
+
+    // unstage original file
+    execSync(`git reset HEAD "${file}"`)
+    
+    // add encrypted file
+    if (existsSync(encryptedFile)) {
+      execSync(`git add "${encryptedFile}"`)
+    } else {
+      console.error(`encrypted file not found: ${encryptedFile}`)
+      process.exit(1)
+    }
   } catch (error) {
-    console.log(`failed to process ${file}: ${error.message}`);
-    process.exit(1);
+    console.error(`failed to process ${file}: ${error.message}`)
+    process.exit(1)
   }
 } 

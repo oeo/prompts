@@ -38,8 +38,8 @@ try {
   const keyOption = keyId ? `--local-user ${keyId}` : ''
   execSync(`gpg --yes ${keyOption} -d -o "${tempTar}" "${latestArchive}"`)
 
-  // clear private directory
-  execSync(`rm -rf "${privateDir}/*"`)
+  // clear private directory without warning
+  execSync(`rm -rf "${privateDir}"/*`)
 
   // extract archive
   execSync(`tar -xf "${tempTar}" -C "${privateDir}"`)

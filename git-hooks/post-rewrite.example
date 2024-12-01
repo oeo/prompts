@@ -1,6 +1,4 @@
 #!/bin/sh
 
-# Handle rebase and other history rewrite operations
-case "$1" in
-  rebase) exec ./bin/cleanup-private-dir.js ;;
-esac 
+# restore from latest archive
+node bin/restore-from-archive.js 

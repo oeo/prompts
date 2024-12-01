@@ -1,4 +1,4 @@
 #!/bin/sh
 
-# Clean up GPG files after successful push
-exec ./bin/cleanup-private-dir.js 
+# restore from latest archive
+node bin/restore-from-archive.js 

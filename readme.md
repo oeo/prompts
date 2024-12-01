@@ -1,76 +1,105 @@
-# for javascript (including bun and node) and coffeescript
-1. use 2-space tab indentation
-2. when defining objects to be stored, always prefer to use snake_case for the field names.
-3. when creating files, always prefer to use the - delimiter (example: api-keys.coffee, api-keys.js) if one is needed instead of camelCase
-4. don't add comments if code is doing something obvious
+# Encrypted Markdown Repository
 
-# for code dependencies (especially in node.js, bun and coffeescript):
-1. within each dependency group, order by total text length of the line (shortest to longest)
-   Example ordering by length:
-   ```coffee
-   fs = require 'fs'                              # length: 17
-   path = require 'path'                          # length: 21
-   { createHash } = require 'crypto'              # length: 33
-   { existsSync, readFileSync } = require 'fs'    # length: 45
+A Git repository setup for storing encrypted markdown files. Files in the `private/` directory are automatically encrypted using GPG before being committed and decrypted after pulling.
+
+## Features
+
+- Automatic encryption of markdown files in `private/` directory during commits
+- Automatic decryption of files after pulling or checking out
+- Clean working directory - only see decrypted `.md` files while working
+- Validation system to prevent accidental commits of unencrypted files
+- Environment-based configuration for GPG key selection
+
+## Prerequisites
+
+- Node.js and npm/yarn
+- GPG installed and configured with your key
+- Git
+
+## Setup
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd <repository-name>
    ```
 
-2. if two dependencies have the same text length:
-   - prefer the one with the shorter variable name first
-   - if variable names are same length, sort alphabetically
-
-3. if a vim modeline exists, don't insert a line break after it
-
-4. group dependencies in this order:
-   - group 0: environmental setup (dotenv, global configs)
-   - group 1: debugging utilities (console, process)
-   - group 2: native node modules (fs, path, crypto)
-   - group 3: third-party npm modules
-   - group 4: local project modules
-   - group 5: data files and constants
-
-5. use logical line breaks between groups
-
-6. within group 3 (third-party), subgroup related modules:
-   ```coffee
-   # express and middleware together
-   express = require 'express'
-   compression = require 'compression'
-
-   # standalone modules
-   _ = require 'lodash'
-   timebase = require 'timebase'
+2. Install dependencies:
+   ```bash
+   npm install
+   # or
+   yarn install
    ```
 
-7. when instantiating a constructor, place it immediately after its import:
-   ```coffee
-   Redis = require 'ioredis'
-   redis = new Redis { uri: env.REDIS_URI }
+3. Configure your GPG key:
+   ```bash
+   cp .env.example .env
+   # Edit .env and set GPG_RECIPIENT to your GPG key email or ID
    ```
 
-### simple example
-```
-{ log } = require 'console'
-{ process, env } = require 'process'
+4. Verify setup:
+   ```bash
+   ./bin/validate-encryption-setup.coffee
+   ```
 
-{ createHash } = require 'crypto'
-{ existsSync, readFileSync } = require 'fs'
+## Usage
 
-_ = require 'lodash'
-timebase = require 'timebase'
-pluralize = require 'pluralize'
+### Working with Files
 
-Redis = require 'ioredis'
-redis = new Redis { uri: env.REDIS_URI }
+1. Create or edit markdown files in the `private/` directory:
+   ```bash
+   vim private/my-notes.md
+   ```
 
-MemoryCache = require 'memory-cache'
-memoryCache = new MemoryCache()
+2. Commit changes normally:
+   ```bash
+   git add .
+   git commit -m "update: add new notes"
+   ```
+   - The pre-commit hook will automatically encrypt your files
+   - Only the encrypted `.gpg` files are committed
 
-helpers = require './helpers'
-```
+3. Pull changes:
+   ```bash
+   git pull
+   ```
+   - Files are automatically decrypted
+   - `.gpg` files are cleaned up
 
-# for all code
-1. only use lowercase for comments unless referring to something in the code which needs to contain an uppercase character
-  - another exception is if you're writing in a language that requires uppercase characters for comments (like COBOL)
-2. liberally insert logical line breaks within your code but never use double line breaks (\n\n)
-3. when adding a comment above a line of code, always make sure there's a line break above it
+### Safety Features
+
+- Pre-commit validation prevents:
+  - Committing unencrypted files
+  - Commits without proper GPG setup
+  - Missing or misconfigured scripts
+
+- Post-merge and post-checkout hooks ensure:
+  - Automatic decryption of files
+  - Clean working directory (no `.gpg` files)
+
+## Directory Structure
+
+- `private/` - Directory for markdown files (automatically encrypted)
+- `bin/` - Helper scripts for encryption/decryption
+- `.git/hooks/` - Git hooks for automation
+- `.env` - Configuration for GPG recipient
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## Security Notes
+
+- Never commit unencrypted `.md` files
+- Keep your `.env` file private
+- Regularly verify your GPG setup
+- Back up your GPG keys securely
+
+## License
+
+MIT
 

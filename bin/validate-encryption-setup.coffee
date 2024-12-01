@@ -6,12 +6,19 @@
 { execSync } = require 'child_process'
 { existsSync, readdirSync, statSync } = require 'fs'
 path = require 'path'
+require 'dotenv/config'
+
+check_env = ->
+  unless process.env.GPG_RECIPIENT
+    log 'error: GPG_RECIPIENT not set in .env file'
+    log 'hint: copy .env.example to .env and set your GPG key or email'
+    exit 1
 
 check_gpg = ->
   try
     output = execSync 'gpg --list-secret-keys', { encoding: 'utf8' }
-    unless output.includes 'taky'
-      log 'error: GPG key for "taky" not found'
+    unless output.includes process.env.GPG_RECIPIENT
+      log "error: GPG key for \"#{process.env.GPG_RECIPIENT}\" not found"
       exit 1
   catch error
     log 'error: GPG is not properly installed or configured'
@@ -23,7 +30,7 @@ check_staged_files = ->
     for file in staged.split '\n'
       if file.startsWith('private/') and file.endsWith('.md') and not file.endsWith('.md.gpg')
         log "error: attempting to commit unencrypted markdown file: #{file}"
-        log 'hint: remove it from staging with: git reset HEAD #{file}'
+        log "hint: remove it from staging with: git reset HEAD #{file}"
         exit 1
   catch error
     log 'error: failed to check staged files'
@@ -77,6 +84,9 @@ check_gitignore = ->
     exit 1
 
 # Run all checks
+log 'checking environment...'
+check_env()
+
 log 'checking GPG setup...'
 check_gpg()
 

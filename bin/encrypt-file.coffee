@@ -6,8 +6,8 @@
 { execSync } = require 'child_process'
 { existsSync } = require 'fs'
 path = require 'path'
+require 'dotenv/config'
 
-gpg_recipient = 'taky'
 file_path = process.argv[2]
 
 unless file_path
@@ -28,7 +28,7 @@ if existsSync encrypted_path
   exit 1
 
 try
-  execSync "gpg --yes --batch --recipient #{gpg_recipient} --output #{encrypted_path} --encrypt #{file_path}", { stdio: 'inherit' }
+  execSync "gpg --yes --batch --recipient #{process.env.GPG_RECIPIENT} --output #{encrypted_path} --encrypt #{file_path}", { stdio: 'inherit' }
   log "encrypted #{file_path} to #{encrypted_path}"
 catch error
   log "encryption failed: #{error.message}"

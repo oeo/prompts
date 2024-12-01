@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Clean up GPG files after successful push
+exec ./bin/cleanup-private-dir.coffee 

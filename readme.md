@@ -37,7 +37,21 @@ A Git repository setup for storing encrypted markdown files. Files in the `priva
    # Edit .env and set GPG_RECIPIENT to your GPG key email or ID
    ```
 
-4. Verify setup:
+4. Install Git hooks:
+   ```bash
+   # Make scripts executable
+   chmod +x bin/*.coffee
+   
+   # Install hooks
+   cp git-hooks/pre-commit.example .git/hooks/pre-commit
+   cp git-hooks/post-merge.example .git/hooks/post-merge
+   cp git-hooks/post-checkout.example .git/hooks/post-checkout
+   
+   # Make hooks executable
+   chmod +x .git/hooks/pre-commit .git/hooks/post-merge .git/hooks/post-checkout
+   ```
+
+5. Verify setup:
    ```bash
    ./bin/validate-encryption-setup.coffee
    ```
@@ -81,7 +95,7 @@ A Git repository setup for storing encrypted markdown files. Files in the `priva
 
 - `private/` - Directory for markdown files (automatically encrypted)
 - `bin/` - Helper scripts for encryption/decryption
-- `.git/hooks/` - Git hooks for automation
+- `git-hooks/` - Example Git hooks for installation
 - `.env` - Configuration for GPG recipient
 
 ## Contributing

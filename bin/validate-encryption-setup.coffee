@@ -4,7 +4,7 @@
 { exit } = require 'process'
 
 { execSync } = require 'child_process'
-{ existsSync, readdirSync, statSync } = require 'fs'
+{ existsSync, readdirSync, statSync, lstatSync } = require 'fs'
 path = require 'path'
 require 'dotenv/config'
 
@@ -41,6 +41,9 @@ check_hooks = ->
     '.git/hooks/pre-commit'
     '.git/hooks/post-merge'
     '.git/hooks/post-checkout'
+    '.git/hooks/post-rewrite'
+    '.git/hooks/post-pull'
+    '.git/hooks/post-push'
   ]
   
   for hook in required_hooks
@@ -48,9 +51,11 @@ check_hooks = ->
       log "error: missing git hook: #{hook}"
       exit 1
     
-    unless (statSync(hook).mode & 0o111) != 0
-      log "error: git hook is not executable: #{hook}"
-      exit 1
+    # Skip executable check for symlinks (like post-pull)
+    unless lstatSync(hook).isSymbolicLink()
+      unless (statSync(hook).mode & 0o111) != 0
+        log "error: git hook is not executable: #{hook}"
+        exit 1
 
 check_scripts = ->
   required_scripts = [

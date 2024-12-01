@@ -12,7 +12,7 @@ A Git repository setup for storing encrypted markdown files. Files in the `priva
 
 ## Prerequisites
 
-- Node.js and npm/yarn
+- Node.js (v12 or later)
 - GPG installed and configured with your key
 - Git
 
@@ -24,37 +24,18 @@ A Git repository setup for storing encrypted markdown files. Files in the `priva
    cd <repository-name>
    ```
 
-2. Install dependencies:
+2. Run the installation script:
    ```bash
-   npm install
-   # or
-   yarn install
+   node install.js
    ```
 
-3. Configure your GPG key:
+3. Edit `.env` and set your GPG key:
    ```bash
-   cp .env.example .env
-   # Edit .env and set GPG_RECIPIENT to your GPG key email or ID
+   # Open .env and set GPG_RECIPIENT to your GPG key email or ID
+   vim .env
    ```
 
-4. Install Git hooks:
-   ```bash
-   # Make scripts executable
-   chmod +x bin/*.coffee
-   
-   # Install hooks
-   cp git-hooks/pre-commit.example .git/hooks/pre-commit
-   cp git-hooks/post-merge.example .git/hooks/post-merge
-   cp git-hooks/post-checkout.example .git/hooks/post-checkout
-   
-   # Make hooks executable
-   chmod +x .git/hooks/pre-commit .git/hooks/post-merge .git/hooks/post-checkout
-   ```
-
-5. Verify setup:
-   ```bash
-   ./bin/validate-encryption-setup.coffee
-   ```
+That's it! The installation script handles everything else automatically.
 
 ## Usage
 
@@ -73,12 +54,13 @@ A Git repository setup for storing encrypted markdown files. Files in the `priva
    - The pre-commit hook will automatically encrypt your files
    - Only the encrypted `.gpg` files are committed
 
-3. Pull changes:
+3. Pull or push changes:
    ```bash
-   git pull
+   git pull  # or
+   git push
    ```
-   - Files are automatically decrypted
-   - `.gpg` files are cleaned up
+   - Files are automatically decrypted after pull
+   - `.gpg` files are cleaned up after both pull and push
 
 ### Safety Features
 
@@ -87,9 +69,10 @@ A Git repository setup for storing encrypted markdown files. Files in the `priva
   - Commits without proper GPG setup
   - Missing or misconfigured scripts
 
-- Post-merge and post-checkout hooks ensure:
-  - Automatic decryption of files
+- Post-merge/pull/checkout/push hooks ensure:
+  - Automatic decryption of files after any update
   - Clean working directory (no `.gpg` files)
+  - Handles pull, merge, checkout, rebase, and push operations
 
 ## Directory Structure
 

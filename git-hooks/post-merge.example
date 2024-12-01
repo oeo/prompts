@@ -1,4 +1,4 @@
 #!/bin/sh
 
 # Decrypt files and clean up GPG files after merge/pull
-exec ./bin/cleanup-private-dir.coffee 
+exec ./bin/cleanup-private-dir.js 

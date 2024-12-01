@@ -2,5 +2,5 @@
 
 # Handle rebase and other history rewrite operations
 case "$1" in
-  rebase) exec ./bin/cleanup-private-dir.coffee ;;
+  rebase) exec ./bin/cleanup-private-dir.js ;;
 esac 

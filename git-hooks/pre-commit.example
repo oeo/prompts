@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# First run validations
+./bin/validate-encryption-setup.coffee || exit 1
+
+# If validations pass, run the encryption
+exec ./bin/pre-commit-encrypt.coffee 

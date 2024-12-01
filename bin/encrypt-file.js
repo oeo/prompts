@@ -29,8 +29,11 @@ if (existsSync(encryptedPath)) {
 }
 
 try {
+  // Build recipient arguments for each recipient
+  const recipients = process.env.GPG_RECIPIENTS.split(',').map(r => `--recipient ${r.trim()}`).join(' ');
+  
   execSync(
-    `gpg --yes --batch --recipient ${process.env.GPG_RECIPIENT} --output ${encryptedPath} --encrypt ${filePath}`,
+    `gpg --batch --yes ${recipients} --output ${encryptedPath} --encrypt ${filePath}`,
     { stdio: 'inherit' }
   );
   console.log(`encrypted ${filePath} to ${encryptedPath}`);

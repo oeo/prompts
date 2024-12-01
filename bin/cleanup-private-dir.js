@@ -3,6 +3,7 @@
 const { execSync } = require('child_process');
 const { existsSync, readdirSync, statSync, unlinkSync } = require('fs');
 const path = require('path');
+require('dotenv/config');
 
 function walkDir(dir) {
   const results = [];

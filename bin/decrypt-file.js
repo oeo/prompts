@@ -3,6 +3,7 @@
 const { execSync } = require('child_process');
 const { existsSync } = require('fs');
 const path = require('path');
+require('dotenv/config');
 
 const filePath = process.argv[2];
 
@@ -29,7 +30,7 @@ if (existsSync(decryptedPath)) {
 
 try {
   execSync(
-    `gpg --yes --batch --output ${decryptedPath} --decrypt ${filePath}`,
+    `gpg --batch --yes --output ${decryptedPath} --decrypt ${filePath}`,
     { stdio: 'inherit' }
   );
   console.log(`decrypted ${filePath} to ${decryptedPath}`);

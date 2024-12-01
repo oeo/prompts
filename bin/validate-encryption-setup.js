@@ -10,9 +10,9 @@ function log(message) {
 }
 
 function checkEnv() {
-  if (!process.env.GPG_RECIPIENT) {
-    log('error: GPG_RECIPIENT not set in .env file');
-    log('hint: copy .env.example to .env and set your GPG key or email');
+  if (!process.env.GPG_RECIPIENTS) {
+    log('error: GPG_RECIPIENTS not set in .env file');
+    log('hint: copy .env.example to .env and set your GPG recipients (comma-separated)');
     process.exit(1);
   }
 }
@@ -20,9 +20,13 @@ function checkEnv() {
 function checkGpg() {
   try {
     const output = execSync('gpg --list-secret-keys', { encoding: 'utf8' });
-    if (!output.includes(process.env.GPG_RECIPIENT)) {
-      log(`error: GPG key for "${process.env.GPG_RECIPIENT}" not found`);
-      process.exit(1);
+    const recipients = process.env.GPG_RECIPIENTS.split(',').map(r => r.trim());
+    
+    for (const recipient of recipients) {
+      if (!output.includes(recipient)) {
+        log(`error: GPG key for "${recipient}" not found`);
+        process.exit(1);
+      }
     }
   } catch (error) {
     log('error: GPG is not properly installed or configured');

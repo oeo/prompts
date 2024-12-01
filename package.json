@@ -1,7 +1,7 @@
 {
   "name": "encrypted-markdown-repo",
   "version": "1.0.0",
-  "description": "A Git repository setup for storing encrypted markdown files",
+  "description": "A Git repository setup for storing encrypted files",
   "dependencies": {
     "dotenv": "^16.0.0",
     "minimatch": "^9.0.0"

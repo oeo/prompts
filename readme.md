@@ -41,6 +41,8 @@ For more GPG commands and usage, see the [GPG Cheat Sheet](https://devhints.io/g
 
 ## Installation
 
+### New Repository
+
 1. Clone the repository:
    ```bash
    git clone <repository-url>
@@ -66,6 +68,45 @@ For more GPG commands and usage, see the [GPG Cheat Sheet](https://devhints.io/g
    # Example: *.md,*.txt,*.json
    ENCRYPT_PATTERNS=*.md,*.txt
    ```
+
+4. Commit the initial archive:
+   ```bash
+   git commit -m "init: create initial archive"
+   git push
+   ```
+
+### Existing Repository
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd <repository-name>
+   ```
+
+2. Configure your GPG keys in `.env`:
+   ```bash
+   # Required: Comma-separated list of GPG recipients (emails or key IDs) who can decrypt files
+   # Can use either email or last 16 characters of key ID for each recipient
+   GPG_RECIPIENTS=user1@example.com,3AA5C34371567BD2
+   
+   # Optional: Specific GPG key ID for signing if you have multiple keys
+   # GPG_KEY_ID=3AA5C34371567BD2
+   
+   # File patterns to encrypt/decrypt (comma-separated)
+   # Default: * (all files)
+   # Example: *.md,*.txt,*.json
+   ENCRYPT_PATTERNS=*.md,*.txt
+   ```
+
+3. Run the installation script:
+   ```bash
+   node install.js
+   ```
+
+   This will:
+   - Set up git hooks
+   - Validate your GPG configuration
+   - Restore files from the latest archive
 
 ## Usage
 

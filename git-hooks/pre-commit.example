@@ -14,4 +14,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# stage the new archive
+git add .archives/*.tar.gpg
+
 exit 0 

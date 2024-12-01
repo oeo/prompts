@@ -22,10 +22,7 @@ if (!archives.trim()) {
   console.log('creating initial empty archive...')
   
   // create timestamp for archive name
-  const timestamp = new Date().toISOString()
-    .replace(/[:.]/g, '-')
-    .replace('T', '_')
-    .replace('Z', '')
+  const timestamp = Math.floor(Date.now() / 1000)
 
   const tarFile = path.join(archiveDir, `${timestamp}.tar`)
   const encryptedFile = path.join(archiveDir, `${timestamp}.tar.gpg`)

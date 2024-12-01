@@ -21,10 +21,7 @@ function createArchive(message) {
   ensureDirectories()
 
   // create timestamp for archive name
-  const timestamp = new Date().toISOString()
-    .replace(/[:.]/g, '-')
-    .replace('T', '_')
-    .replace('Z', '')
+  const timestamp = Math.floor(Date.now() / 1000)
 
   const tarFile = path.join(ARCHIVE_DIR, `${timestamp}.tar`)
   const encryptedFile = path.join(ARCHIVE_DIR, `${timestamp}.tar.gpg`)

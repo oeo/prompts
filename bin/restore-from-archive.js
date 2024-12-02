@@ -24,25 +24,32 @@ if (!existsSync(archiveDir)) {
   process.exit(1)
 }
 
+function parseArchiveDate(filename) {
+  try {
+    if (filename.includes('_')) {
+      // Parse ISO format (2024-12-02_00-49-38-434Z)
+      const [datePart, timePart] = filename.split('_')
+      const [year, month, day] = datePart.split('-').map(Number)
+      const [hour, minute, second] = timePart.split(/[-Z]/g).filter(Boolean).map(Number)
+      return new Date(Date.UTC(year, month - 1, day, hour, minute, second))
+    } else {
+      // Parse Unix timestamp
+      return new Date(parseInt(filename) * 1000)
+    }
+  } catch (e) {
+    console.error('Error parsing date:', e)
+    return new Date(0) // Return epoch for invalid dates
+  }
+}
+
 // find latest archive
 const archives = readdirSync(archiveDir)
   .filter(f => f.endsWith('.tar.gpg'))
   .map(f => {
-    // Try to parse timestamp from filename
-    let timestamp
-    if (f.includes('_')) {
-      // Parse from formatted date (2024-12-01_23-37-27-060)
-      const dateStr = f.split('.')[0]
-      const date = new Date(dateStr.replace(/_/g, ' ').replace(/-/g, ':'))
-      timestamp = Math.floor(date.getTime() / 1000)
-    } else {
-      // Parse from Unix timestamp
-      timestamp = parseInt(f.split('.')[0])
-    }
-
+    const date = parseArchiveDate(f.split('.')[0])
     return {
       name: f,
-      timestamp
+      timestamp: Math.floor(date.getTime() / 1000)
     }
   })
   .sort((a, b) => b.timestamp - a.timestamp) // sort by timestamp descending

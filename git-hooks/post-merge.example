@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# always restore from latest archive
+echo "post-merge: cleaning private directory..."
+rm -rf private
+mkdir -p private
+
+echo "post-merge: restoring from latest archive..."
+node bin/restore-from-archive.js
+
+echo "post-merge: done" 

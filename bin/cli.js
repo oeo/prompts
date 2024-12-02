@@ -1,36 +1,29 @@
 #!/usr/bin/env node
 
 import { execSync } from 'child_process'
-import { existsSync, readdirSync, statSync } from 'fs'
+import { existsSync, readdirSync, statSync, unlinkSync } from 'fs'
 import path from 'path'
 import chalk from 'chalk'
-import boxen from 'boxen'
-import ora from 'ora'
 import Table from 'cli-table3'
 import { fileURLToPath } from 'url'
+import minimist from 'minimist'
 
-// Get current directory
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const ARCHIVE_DIR = path.join(process.cwd(), '.archives')
 
-// Styling constants
+// Styling constants - more subtle colors
 const styles = {
-  header: chalk.bold.cyan,
-  subheader: chalk.cyan,
-  success: chalk.green,
+  dim: chalk.gray,
+  accent: chalk.green,
   error: chalk.red,
-  warning: chalk.yellow,
-  info: chalk.blue,
-  dim: chalk.dim,
   hash: chalk.yellow,
-  size: chalk.magenta,
-  date: chalk.blue,
-  author: chalk.green
+  meta: chalk.gray
 }
 
 function log(message, type = 'info') {
   const prefix = {
     info: styles.info('ℹ'),
-    success: styles.success('✔'),
+    success: styles.success('✓'),
     error: styles.error('✖'),
     warning: styles.warning('⚠')
   }
@@ -38,11 +31,11 @@ function log(message, type = 'info') {
 }
 
 function error(message) {
-  console.error(`\n${styles.error('Error:')} ${message}`)
+  console.error(`${styles.error('error:')} ${message}`)
   process.exit(1)
 }
 
-function cmd(command, showOutput = false) {
+function execCmd(command, showOutput = false) {
   try {
     const output = execSync(command, { encoding: 'utf8', stdio: showOutput ? 'inherit' : ['inherit', 'pipe', 'pipe'] })
     return output.trim()
@@ -52,59 +45,76 @@ function cmd(command, showOutput = false) {
 }
 
 function formatSize(bytes) {
-  const units = ['B', 'KB', 'MB', 'GB']
-  let size = bytes
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let size = Number(bytes)
   let unit = 0
+
+  if (isNaN(size)) {
+    return '0 B'
+  }
+
   while (size >= 1024 && unit < units.length - 1) {
     size /= 1024
     unit++
   }
-  return `${size.toFixed(1)} ${units[unit]}`
+
+  return `${Math.round(size * 10) / 10} ${units[unit]}`
 }
 
-function getGitInfo(archiveName) {
+function getGitInfo(filename) {
   try {
-    const commitHash = cmd(`git log --format="%H" -1 -- .archives/${archiveName}`).trim()
-    if (!commitHash) return null
-
-    const author = cmd(`git show -s --format="%an <%ae>" ${commitHash}`).trim()
-    const date = cmd(`git show -s --format="%cd" ${commitHash} --date=local`).trim()
-    const message = cmd(`git show -s --format="%s" ${commitHash}`).trim()
-
-    return { author, date, message, hash: commitHash.slice(0, 7) }
+    const output = execSync(`git log --format="%H %an <%ae> %s" -n 1 -- .archives/${filename}`, { encoding: 'utf8' })
+    const [hash, ...rest] = output.trim().split(' ')
+    const message = rest.join(' ')
+    return {
+      hash: hash.slice(0, 7),
+      author: message.split('>')[0] + '>',
+      message: message.split('>')[1].trim()
+    }
   } catch (e) {
-    return null
+    return {
+      hash: '',
+      author: '',
+      message: ''
+    }
+  }
+}
+
+function parseArchiveDate(filename) {
+  try {
+    if (filename.includes('_')) {
+      // Parse ISO format (2024-12-02_00-49-38-434Z)
+      const [datePart, timePart] = filename.split('_')
+      const [year, month, day] = datePart.split('-').map(Number)
+      const [hour, minute, second] = timePart.split(/[-Z]/g).filter(Boolean).map(Number)
+      return new Date(Date.UTC(year, month - 1, day, hour, minute, second))
+    } else {
+      // Parse Unix timestamp
+      return new Date(parseInt(filename) * 1000)
+    }
+  } catch (e) {
+    console.error('Error parsing date:', e)
+    return new Date(0) // Return epoch for invalid dates
   }
 }
 
 function getArchives() {
-  const archiveDir = path.join(process.cwd(), '.archives')
-  if (!existsSync(archiveDir)) {
+  if (!existsSync(ARCHIVE_DIR)) {
     error('no archives directory found')
   }
 
-  return readdirSync(archiveDir)
-    .filter(f => f.endsWith('.tar.gpg'))
+  return readdirSync(ARCHIVE_DIR)
+    .filter(f => f.endsWith('.tar.gpg') && f.includes('_'))
     .map(f => {
-      const stats = statSync(path.join(archiveDir, f))
+      const filePath = path.join(ARCHIVE_DIR, f)
+      const stats = statSync(filePath)
       const gitInfo = getGitInfo(f)
+      const date = parseArchiveDate(f.split('.')[0])
       
-      // Try to parse timestamp from filename
-      let timestamp
-      if (f.includes('_')) {
-        // Parse from formatted date (2024-12-01_23-37-27-060)
-        const dateStr = f.split('.')[0]
-        const date = new Date(dateStr.replace(/_/g, ' ').replace(/-/g, ':'))
-        timestamp = Math.floor(date.getTime() / 1000)
-      } else {
-        // Parse from Unix timestamp
-        timestamp = parseInt(f.split('.')[0])
-      }
-
       return {
         name: f,
-        timestamp,
-        date: new Date(timestamp * 1000).toLocaleString(),
+        timestamp: Math.floor(date.getTime() / 1000),
+        date: date.toLocaleString(),
         size: stats.size,
         git: gitInfo
       }
@@ -112,278 +122,374 @@ function getArchives() {
     .sort((a, b) => b.timestamp - a.timestamp)
 }
 
+function getOutputFormat(args) {
+  // Look for --output=value or --output value
+  const outputArg = args.find(arg => arg === '--output' || arg.startsWith('--output='))
+  if (!outputArg) return 'default'
+  
+  if (outputArg === '--output') {
+    // Get the next argument as the value
+    const valueIndex = args.indexOf('--output') + 1
+    return args[valueIndex] || 'default'
+  }
+  
+  // Handle --output=value format
+  return outputArg.split('=')[1] || 'default'
+}
+
+// Add a function to handle archive listing
+function displayArchives(archives, args) {
+  if (args.includes('--json')) {
+    console.log(JSON.stringify(archives, null, 2))
+    return
+  }
+
+  archives.forEach((a, i) => {
+    const current = i === 0 ? chalk.green(' (current)') : ''
+    const hash = a.git.hash ? chalk.yellow(a.git.hash) : chalk.gray('no hash')
+    const message = a.git.message || chalk.gray('no commit info')
+    const meta = chalk.gray(`${a.name} • ${formatSize(a.size)} • ${a.git.author || 'unknown'}`)
+    console.log(`${hash} ${message}${current}\n${chalk.gray('└─')} ${meta}\n`)
+  })
+}
+
+// Add this helper function
+const alignDescription = (cmd, desc) => {
+  const cmdWidth = 25  // Increased width for better alignment
+  const padding = ' '.repeat(Math.max(0, cmdWidth - cmd.length))
+  return cmd + padding + desc
+}
+
 const commands = {
-  list: () => {
-    const archives = getArchives()
-    if (archives.length === 0) {
-      log('No archives found', 'warning')
-      return
-    }
+  help() {
+    console.log(`${chalk.yellow('Usage')}
+  <command> [options]
 
-    console.log(boxen(styles.header(' Archive List '), {
-      padding: 1,
-      margin: 1,
-      borderStyle: 'round',
-      borderColor: 'cyan'
-    }))
+${chalk.yellow('Commands')}
+  ${chalk.green('ls')}          \t\t${chalk.gray('List archives')}
+  ${chalk.green('info')}        \t\t${chalk.gray('Show archive info')}
+    └─ <index>
+    └─ <hash>
+  ${chalk.green('verify')}      \t\t${chalk.gray('Check archive integrity')}
+    └─ <index>
+    └─ <hash>
+  ${chalk.green('restore')}     \t\t${chalk.gray('Restore from archive by index or commit hash')}
+    └─ <index>
+    └─ <hash>
+  ${chalk.green('clean')}       \t\t${chalk.gray('Remove uncommitted archives')}
+  ${chalk.green('help')} 
 
-    const table = new Table({
-      head: ['Archive', 'Date', 'Size', 'Author', 'Message'].map(h => styles.header(h)),
-      style: { head: [], border: [] }
-    })
-
-    archives.forEach((a, i) => {
-      const current = i === 0 ? styles.success(' (current)') : ''
-      table.push([
-        styles.info(a.name) + current,
-        styles.date(a.date),
-        styles.size(formatSize(a.size)),
-        a.git ? styles.author(a.git.author) : styles.dim('unknown'),
-        a.git ? (styles.hash(a.git.hash) + ' ' + a.git.message) : styles.dim('no commit info')
-      ])
-    })
-
-    console.log(table.toString())
+${chalk.yellow('Examples')}
+  ls --limit=5      \t${chalk.gray('# Show 5 most recent')}
+  info 2           \t${chalk.gray('# Show info for second most recent')}
+  restore a321160   \t${chalk.gray('# Restore by commit hash')}`)
   },
 
-  info: () => {
-    const archives = getArchives()
+  async ls(args) {
+    const archives = await getArchives()
     if (archives.length === 0) {
-      log('No archives found', 'warning')
+      console.log('No archives found')
       return
     }
 
-    console.log(boxen(styles.header(' Archive Statistics '), {
-      padding: 1,
-      margin: 1,
-      borderStyle: 'round',
-      borderColor: 'cyan'
-    }))
-
-    const totalSize = archives.reduce((sum, a) => sum + a.size, 0)
-    const avgSize = totalSize / archives.length
-    const authors = new Set(archives.filter(a => a.git).map(a => a.git.author))
-
-    const statsTable = new Table()
-    statsTable.push(
-      { 'Total Archives': styles.info(archives.length.toString()) },
-      { 'Total Size': styles.size(formatSize(totalSize)) },
-      { 'Average Size': styles.size(formatSize(avgSize)) },
-      { 'Contributors': styles.author(authors.size.toString()) },
-      { 'Date Range': `${styles.date(archives[archives.length - 1].date)} → ${styles.date(archives[0].date)}` }
-    )
-
-    console.log(statsTable.toString())
-
-    console.log(boxen(styles.header(' Recent History '), {
-      padding: 1,
-      margin: { top: 1 },
-      borderStyle: 'round',
-      borderColor: 'cyan'
-    }))
-
-    const historyTable = new Table({
-      head: ['Date', 'Size', 'Author', 'Message'].map(h => styles.header(h)),
-      style: { head: [], border: [] }
-    })
-
-    archives.slice(0, 5).forEach(a => {
-      historyTable.push([
-        styles.date(a.date),
-        styles.size(formatSize(a.size)),
-        a.git ? styles.author(a.git.author) : styles.dim('unknown'),
-        a.git ? (styles.hash(a.git.hash) + ' ' + a.git.message) : styles.dim('no commit info')
-      ])
-    })
-
-    console.log(historyTable.toString())
-  },
-
-  restore: async (args) => {
-    const archives = getArchives()
-    if (archives.length === 0) {
-      error('no archives found')
+    const limit = args.limit || 10
+    if (limit !== 0) {
+      archives.length = Math.min(archives.length, limit)
     }
 
-    let targetArchive
-    if (!args[0]) {
-      targetArchive = archives[0]
-      log(`Restoring from latest archive: ${styles.info(targetArchive.name)}`, 'info')
-    } else if (args[0] === 'list') {
-      console.log(boxen(styles.header(' Available Archives '), {
-        padding: 1,
-        margin: 1,
-        borderStyle: 'round',
-        borderColor: 'cyan'
-      }))
-
-      const table = new Table({
-        head: ['#', 'Archive', 'Date', 'Size', 'Author', 'Message'].map(h => styles.header(h)),
-        style: { head: [], border: [] }
-      })
-
-      archives.forEach((a, i) => {
-        table.push([
-          styles.info((i + 1).toString()),
-          styles.info(a.name),
-          styles.date(a.date),
-          styles.size(formatSize(a.size)),
-          a.git ? styles.author(a.git.author) : styles.dim('unknown'),
-          a.git ? (styles.hash(a.git.hash) + ' ' + a.git.message) : styles.dim('no commit info')
-        ])
-      })
-
-      console.log(table.toString())
+    if (args.json) {
+      console.log(JSON.stringify(archives, null, 2))
       return
-    } else if (!isNaN(args[0])) {
-      const index = parseInt(args[0]) - 1
-      if (index < 0 || index >= archives.length) {
-        error('invalid archive number')
+    }
+
+    // Find committed archives
+    const committedArchives = archives.filter(a => a.git?.hash)
+    if (committedArchives.length === 0) {
+      // No committed archives found
+      for (const archive of archives) {
+        const size = formatSize(archive.size)
+        const message = archive.git?.message || 'no commit info'
+        const author = archive.git?.author || 'unknown'
+        process.stdout.write(`${chalk.yellow(message)}
+└─ ${archive.name} • ${size} • ${chalk.green(author)}${archives.indexOf(archive) < archives.length - 1 ? '\n' : ''}`)
       }
-      targetArchive = archives[index]
-      log(`Restoring from archive #${index + 1}: ${styles.info(targetArchive.name)}`, 'info')
-    } else {
-      targetArchive = archives.find(a => 
-        a.name === args[0] || 
-        a.name === args[0] + '.tar.gpg' ||
-        a.timestamp.toString() === args[0]
-      )
-      if (!targetArchive) {
-        error('archive not found')
-      }
-      log(`Restoring from archive: ${styles.info(targetArchive.name)}`, 'info')
+      return
     }
 
-    if (targetArchive.git) {
-      console.log(`${styles.dim('commit')} ${styles.hash(targetArchive.git.hash)} ${styles.dim('by')} ${styles.author(targetArchive.git.author)}`)
-      console.log(styles.dim('message:'), targetArchive.git.message)
-    }
-
-    const spinner = ora('Restoring files...').start()
-    try {
-      cmd('rm -rf private')
-      cmd('mkdir -p private')
-      cmd(`node bin/restore-from-archive.js "${targetArchive.name}"`)
-      spinner.succeed('Files restored successfully')
-    } catch (e) {
-      spinner.fail('Failed to restore files')
-      error(e.message)
+    // Process archives
+    for (const archive of archives) {
+      const size = formatSize(archive.size)
+      const message = archive.git?.message || 'no commit info'
+      const author = archive.git?.author || 'unknown'
+      const committedIndex = committedArchives.indexOf(archive)
+      const indexStr = committedIndex !== -1 ? 
+        `[${committedIndex}] ` : 
+        ''
+      const hash = archive.git?.hash ? 
+        `${chalk.blue(archive.git.hash)} ` : 
+        ''
+      process.stdout.write(`${indexStr}${hash}${chalk.yellow(message)}
+└─ ${archive.name} • ${size} • ${chalk.green(author)}${archives.indexOf(archive) < archives.length - 1 ? '\n' : ''}`)
     }
   },
 
-  create: async () => {
-    const spinner = ora('Creating new archive...').start()
-    try {
-      cmd('node bin/create-encrypted-archive.js')
-      spinner.succeed('Archive created successfully')
-    } catch (e) {
-      spinner.fail('Failed to create archive')
-      error(e.message)
-    }
-  },
-
-  verify: async (args) => {
-    const archives = getArchives()
+  async info(args) {
+    const archives = await getArchives()
     if (archives.length === 0) {
-      error('no archives found')
+      console.log('No archives found')
+      return
     }
 
-    let targetArchives = archives
-    if (args[0]) {
-      if (!isNaN(args[0])) {
-        const count = parseInt(args[0])
-        if (count < 1 || count > archives.length) {
-          error('invalid archive count')
-        }
-        targetArchives = archives.slice(0, count)
-      } else {
-        const archive = archives.find(a => 
-          a.name === args[0] || 
-          a.name === args[0] + '.tar.gpg' ||
-          a.timestamp.toString() === args[0]
-        )
+    let archive
+    if (args._.length > 1) {
+      const target = args._[1]
+      if (/^\d+$/.test(target)) {
+        // Index provided
+        const index = parseInt(target)
+        archive = archives[index]
         if (!archive) {
-          error('archive not found')
+          console.error(`Archive index ${target} not found`)
+          return
+        }
+      } else {
+        // Hash provided
+        archive = archives.find(a => a.git?.hash?.startsWith(target))
+        if (!archive) {
+          console.error(`Archive with hash ${target} not found`)
+          return
+        }
+      }
+    } else {
+      // No argument - show most recent
+      archive = archives[0]
+    }
+
+    if (args.json) {
+      console.log(JSON.stringify(archive, null, 2))
+      return
+    }
+
+    const size = formatSize(archive.size)
+    const date = new Date(archive.timestamp * 1000).toISOString()
+      .replace(/[TZ]/g, ' ')
+      .trim()
+    const message = archive.git?.message || 'no commit info'
+    const author = archive.git?.author || 'unknown'
+    const filename = archive.name || archive.filename
+
+    console.log(`${chalk.yellow(message)}${archive.is_current ? ' (current)' : ''}
+└─ ${filename} • ${size} • ${chalk.green(author)}
+   ${chalk.gray('created:')} ${date}${archive.git?.hash ? `\n   ${chalk.gray('commit:')}  ${archive.git.hash}` : ''}`)
+  },
+
+  async clean() {
+    const archives = await getArchives()
+    const uncommitted = archives.filter(a => !a.git?.hash)
+    
+    if (uncommitted.length <= 1) {
+      console.log('No cleanup needed - at most one uncommitted archive')
+      return
+    }
+
+    // Keep the most recent uncommitted archive
+    const toDelete = uncommitted.slice(1)
+    
+    for (const archive of toDelete) {
+      const archivePath = path.join(ARCHIVE_DIR, archive.name)
+      unlinkSync(archivePath)
+      // Remove from git
+      try {
+        await execSync(`git rm -f "${archivePath}"`)
+      } catch (error) {
+        // If file wasn't in git, just log it was removed
+        console.log(`Removed ${archive.name}`)
+      }
+    }
+
+    console.log(`\nCleanup complete. Kept most recent uncommitted archive: ${uncommitted[0].name}`)
+    console.log(`\n${chalk.gray('Tip: Run')} git commit -m "chore: clean up uncommitted archives" ${chalk.gray('to save these changes')}`)
+  },
+
+  async restore(args) {
+    const archives = await getArchives()
+    if (archives.length === 0) {
+      console.log('No archives found')
+      return
+    }
+
+    // Find committed archives
+    const committedArchives = archives.filter(a => a.git?.hash)
+    if (committedArchives.length === 0) {
+      console.error('No committed archives found')
+      return
+    }
+
+    let archive
+    if (args._.length > 1) {
+      const target = args._[1]
+      if (target === 'list') {
+        return commands.ls(args)
+      }
+      
+      if (/^\d+$/.test(target)) {
+        // Index provided
+        const index = parseInt(target)
+        if (index < 0 || index >= committedArchives.length) {
+          console.error(`Invalid archive index: ${target}`)
+          return
+        }
+        archive = committedArchives[index]
+      } else {
+        // Hash provided
+        archive = archives.find(a => a.git?.hash?.startsWith(target))
+        if (!archive) {
+          console.error(`Archive with hash ${target} not found`)
+          return
+        }
+      }
+    } else {
+      // No argument - use most recent committed archive
+      archive = committedArchives[0]
+    }
+
+    try {
+      // Clear private directory
+      await execSync('rm -rf private')
+      await execSync('mkdir -p private')
+
+      // Decrypt and extract archive
+      const tempTar = path.join(ARCHIVE_DIR, 'temp.tar')
+      await execSync(`gpg --yes -d -o "${tempTar}" "${path.join(ARCHIVE_DIR, archive.name)}"`)
+      await execSync(`tar -xf "${tempTar}" -C private`)
+      await execSync(`rm "${tempTar}"`)
+
+      if (args.json) {
+        console.log(JSON.stringify({ status: 'success', archive }, null, 2))
+        return
+      }
+
+      const size = formatSize(archive.size)
+      const message = archive.git?.message || 'no commit info'
+      const author = archive.git?.author || 'unknown'
+      const hash = archive.git?.hash ? `${chalk.blue(archive.git.hash)} ` : ''
+      console.log(`${hash}${chalk.yellow(message)}
+└─ ${archive.name} • ${size} • ${chalk.green(author)}`)
+    } catch (error) {
+      console.error(`Failed to restore: ${error.message}`)
+      process.exit(1)
+    }
+  },
+
+  async verify(args) {
+    const archives = await getArchives()
+    if (archives.length === 0) {
+      console.log('No archives found')
+      return
+    }
+
+    // Find committed archives
+    const committedArchives = archives.filter(a => a.git?.hash)
+    if (committedArchives.length === 0) {
+      console.error('No committed archives found')
+      return
+    }
+
+    let targetArchives = []
+    if (args._.length > 1) {
+      const target = args._[1]
+      if (/^\d+$/.test(target)) {
+        // Index provided
+        const index = parseInt(target)
+        if (index < 0 || index >= committedArchives.length) {
+          console.error(`Invalid archive index: ${target}`)
+          return
+        }
+        targetArchives = [committedArchives[index]]
+      } else {
+        // Hash provided
+        const archive = archives.find(a => a.git?.hash?.startsWith(target))
+        if (!archive) {
+          console.error(`Archive with hash ${target} not found`)
+          return
         }
         targetArchives = [archive]
       }
+    } else {
+      // Default to most recent committed archive
+      targetArchives = [committedArchives[0]]
     }
 
-    console.log(boxen(styles.header(` Verifying ${targetArchives.length} Archive(s) `), {
-      padding: 1,
-      margin: 1,
-      borderStyle: 'round',
-      borderColor: 'cyan'
-    }))
+    const tmpDir = path.join(process.cwd(), '.tmp-verify')
+    await execSync(`rm -rf "${tmpDir}"`)
+    await execSync(`mkdir -p "${tmpDir}"`)
 
-    cmd('rm -rf .tmp-verify')
-    cmd('mkdir -p .tmp-verify')
+    const results = []
+    let allValid = true
 
     try {
-      let allValid = true
       for (const archive of targetArchives) {
-        const spinner = ora(`Verifying ${styles.info(archive.name)}`).start()
-        if (archive.git) {
-          spinner.text += ` (${styles.hash(archive.git.hash)})`
-        }
-
+        const tempFile = path.join(tmpDir, `${archive.name}.tar`)
         try {
-          cmd(`gpg -d -o .tmp-verify/archive.tar .archives/${archive.name} 2>/dev/null`)
-          cmd('cd .tmp-verify && tar tf archive.tar >/dev/null 2>&1')
-          spinner.succeed(`${styles.info(archive.name)} is ${styles.success('valid')}`)
-        } catch (e) {
-          spinner.fail(`${styles.info(archive.name)} is ${styles.error('invalid')}`)
+          // Decrypt archive
+          await execSync(`gpg --yes -d -o "${tempFile}" "${path.join(ARCHIVE_DIR, archive.name)}" 2>/dev/null`)
+          // Verify tar contents
+          await execSync(`tar tf "${tempFile}" >/dev/null 2>&1`)
+          
+          results.push({ name: archive.name, valid: true })
+          
+          if (!args.json) {
+            const size = formatSize(archive.size)
+            const message = archive.git?.message || 'no commit info'
+            const author = archive.git?.author || 'unknown'
+            const hash = archive.git?.hash ? `${chalk.blue(archive.git.hash)} ` : ''
+            process.stdout.write(`${chalk.green('✓')} ${hash}${chalk.yellow(message)}
+└─ ${archive.name} • ${size} • ${chalk.green(author)}${targetArchives.indexOf(archive) < targetArchives.length - 1 ? '\n' : ''}`)
+          }
+        } catch (error) {
+          results.push({ name: archive.name, valid: false })
           allValid = false
+          
+          if (!args.json) {
+            const size = formatSize(archive.size)
+            const message = archive.git?.message || 'no commit info'
+            const author = archive.git?.author || 'unknown'
+            const hash = archive.git?.hash ? `${chalk.blue(archive.git.hash)} ` : ''
+            process.stdout.write(`${chalk.red('✖')} ${hash}${chalk.yellow(message)}
+└─ ${archive.name} • ${size} • ${chalk.green(author)}${targetArchives.indexOf(archive) < targetArchives.length - 1 ? '\n' : ''}`)
+          }
+        } finally {
+          await execSync(`rm -f "${tempFile}"`)
         }
-        cmd('rm -f .tmp-verify/archive.tar')
+      }
+
+      if (args.json) {
+        console.log(JSON.stringify({
+          status: allValid ? 'success' : 'error',
+          message: allValid ? 'all archives valid' : 'some archives failed verification',
+          results
+        }, null, 2))
       }
 
       if (!allValid) {
-        error('some archives failed verification')
+        process.exit(1)
       }
     } finally {
-      cmd('rm -rf .tmp-verify')
+      await execSync(`rm -rf "${tmpDir}"`)
     }
-  },
-
-  help: () => {
-    const message = `
-${styles.header('Usage:')} enc <command> [args]
-
-${styles.header('Commands:')}
-  ${styles.info('list')}                 List all available archives with commit info
-  ${styles.info('info')}                 Show detailed archive and commit statistics
-  ${styles.info('restore')} [number|id]  Restore from specific archive (latest if no arg)
-  ${styles.info('restore list')}        Show numbered list for restoration
-  ${styles.info('create')}              Create new archive without committing
-  ${styles.info('verify')} [n|id]       Verify archive integrity (all if no arg)
-  ${styles.info('help')}                Show this help message
-
-${styles.header('Examples:')}
-  ${styles.dim('$')} enc list            ${styles.dim('# List all archives with commit info')}
-  ${styles.dim('$')} enc info            ${styles.dim('# Show archive and commit statistics')}
-  ${styles.dim('$')} enc restore         ${styles.dim('# Restore from latest archive')}
-  ${styles.dim('$')} enc restore 2       ${styles.dim('# Restore from second newest archive')}
-  ${styles.dim('$')} enc restore list    ${styles.dim('# Show numbered list for selection')}
-  ${styles.dim('$')} enc create          ${styles.dim('# Create new archive')}
-  ${styles.dim('$')} enc verify          ${styles.dim('# Verify all archives')}
-  ${styles.dim('$')} enc verify 5        ${styles.dim('# Verify 5 newest archives')}`
-
-    console.log(boxen(message, {
-      padding: 1,
-      margin: 1,
-      borderStyle: 'round',
-      borderColor: 'cyan'
-    }))
   }
 }
 
-// Parse command line
-const [,, command, ...args] = process.argv
-if (!command || !commands[command]) {
-  commands.help()
-  process.exit(command ? 1 : 0)
-}
+// Parse command line arguments
+const args = minimist(process.argv.slice(2))
+const [cmd] = args._
 
-// Execute command
-commands[command](args) 
+if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '-h') {
+  commands.help()
+} else if (cmd === 'list') {
+  commands.ls(args) // handle 'list' as alias for 'ls'
+} else if (commands[cmd]) {
+  commands[cmd](args)
+} else {
+  console.error(`Unknown command: ${cmd}`)
+  commands.help()
+} 

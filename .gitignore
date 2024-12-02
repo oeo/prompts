@@ -51,3 +51,5 @@ private/*
 
 # Don't ignore encrypted archives
 !.archives/*.tar.gpg
+
+custom-private-folder

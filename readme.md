@@ -1,8 +1,8 @@
-# ward
+# ⌧ ward
 
 A secure file archival tool that uses GPG encryption and Git versioning. Ward helps you maintain encrypted archives of sensitive files while keeping track of changes over time.
 
-## Installation
+## Manual install 
 
 1. Clone the repository
 2. Install dependencies:
@@ -12,7 +12,7 @@ A secure file archival tool that uses GPG encryption and Git versioning. Ward he
 3. Make sure you have GPG installed and configured
 4. The `ward` binary is in ./bin/ward
 
-## Basic Usage
+## Usage 
 
 1. Put files in the `./private` directory
 2. Create an encrypted archive:
@@ -28,7 +28,7 @@ A secure file archival tool that uses GPG encryption and Git versioning. Ward he
    ```bash
    ward ls                     # List archives
    ward cat latest/file.txt    # View file contents
-   ward restore                # Restore latest archive
+   ward restore                # Restore latest archive and extract to ./private
    ```
 
 ## Commands

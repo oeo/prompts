@@ -3,13 +3,42 @@
 import minimist from 'minimist'
 import chalk from 'chalk'
 import { execSync, spawn } from 'child_process'
-import { existsSync, mkdirSync, readdirSync, unlinkSync, statSync } from 'fs'
+import { existsSync, mkdirSync, readdirSync, unlinkSync, statSync, appendFileSync, readFileSync } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import dotenv from 'dotenv'
+
+// Load environment variables
+dotenv.config()
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ARCHIVE_DIR = path.join(process.cwd(), '.archives')
-const PRIVATE_DIR = path.join(process.cwd(), 'private')
+const PRIVATE_DIR = path.join(process.cwd(), process.env.WARD_PRIVATE_FOLDER || 'private')
+
+// Add private folder to .gitignore if not already present
+function ensureGitIgnore() {
+  const gitignorePath = path.join(process.cwd(), '.gitignore')
+  let content = ''
+  
+  try {
+    content = readFileSync(gitignorePath, 'utf8')
+  } catch (e) {
+    // File doesn't exist, that's fine
+  }
+
+  const privateFolder = process.env.WARD_PRIVATE_FOLDER || 'private'
+  if (!content.split('\n').some(line => line.trim() === privateFolder)) {
+    appendFileSync(gitignorePath, `\n${privateFolder}`)
+  }
+}
+
+// Call this before any command that might interact with the private directory
+function initializePrivateDir() {
+  ensureGitIgnore()
+  if (!existsSync(PRIVATE_DIR)) {
+    mkdirSync(PRIVATE_DIR, { recursive: true })
+  }
+}
 
 // Helper functions
 function execCmd(cmd, showOutput = false) {
@@ -652,6 +681,7 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
   },
 
   async restore(args) {
+    initializePrivateDir()
     const archives = await getArchives()
     if (archives.length === 0) {
       console.log('No archives found')
@@ -674,8 +704,8 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
 
     try {
       // Clear private directory
-      execCmd('rm -rf private')
-      execCmd('mkdir -p private')
+      execCmd('rm -rf ' + PRIVATE_DIR)
+      execCmd('mkdir -p ' + PRIVATE_DIR)
 
       // Decrypt and extract archive
       const tempTar = path.join(ARCHIVE_DIR, 'temp.tar')
@@ -685,7 +715,7 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
         '-o', tempTar,
         path.join(ARCHIVE_DIR, archive.name)
       ])
-      execCmd(`tar -xf "${tempTar}" -C private`)
+      execCmd(`tar -xf "${tempTar}" -C ${PRIVATE_DIR}`)
       execCmd(`rm "${tempTar}"`)
 
       if (args.json) {
@@ -700,7 +730,7 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
       
       // Combined output with success message
       console.log(`${hash}${chalk.yellow(message)} └─ ${archive.name} • ${size} • ${chalk.green(author)}`)
-      console.log(`\n${chalk.green('✓')} Successfully restored files to private directory`)
+      console.log(`\n${chalk.green('✓')} Successfully restored files to ${PRIVATE_DIR}`)
     } catch (error) {
       console.error(`Failed to restore: ${error.message}`)
       process.exit(1)
@@ -708,6 +738,7 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
   },
 
   async pack(args) {
+    initializePrivateDir()
     // Check if private directory exists and has files
     if (!existsSync(ARCHIVE_DIR)) {
       mkdirSync(ARCHIVE_DIR, { recursive: true })
@@ -719,7 +750,7 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
     // Check if there are any files in private
     const files = readdirSync(PRIVATE_DIR)
     if (files.length === 0) {
-      console.error('No files found in private directory')
+      console.error('No files found in ' + PRIVATE_DIR)
       process.exit(1)
     }
 
@@ -760,9 +791,9 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
       execCmd(`cd "${tempDir}" && tar xf temp.tar`)
 
       // Compare directories
-      const diff = execCmd(`diff -r "${tempDir}/private" "${PRIVATE_DIR}" 2>&1 || true`)
+      const diff = execCmd(`diff -r "${path.join(tempDir, 'private')}" "${PRIVATE_DIR}" 2>&1 || true`)
       if (!diff) {
-        console.error('No changes detected in private directory. Use --force to create archive anyway.')
+        console.error('No changes detected in ' + PRIVATE_DIR + '. Use --force to create archive anyway.')
         process.exit(1)
       }
 

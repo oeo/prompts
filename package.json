@@ -3,9 +3,6 @@
   "version": "2.0.0-beta",
   "description": "Secure file archival tool with GPG encryption and Git versioning",
   "type": "module",
-  "bin": {
-    "ward": "bin/ward"
-  },
   "scripts": {
     "setup": "node bin/setup.js",
     "pull": "node bin/pull.js",

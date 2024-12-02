@@ -42,9 +42,9 @@ if (!archives.trim()) {
     execSync(`tar -cf "${tarFile}" -C "${privateDir}" . || true`)
 
     // get recipients and key id
-    const recipients = process.env.GPG_RECIPIENTS
+    const recipients = process.env.WARD_GPG_RECIPIENTS
     if (!recipients) {
-      throw new Error('GPG_RECIPIENTS not set in .env')
+      throw new Error('WARD_GPG_RECIPIENTS not set in .env')
     }
 
     // build recipient arguments
@@ -53,7 +53,7 @@ if (!archives.trim()) {
       .join(' ')
 
     // build encryption command
-    const keyId = process.env.GPG_KEY_ID
+    const keyId = process.env.WARD_GPG_KEY
     const keyOption = keyId ? `--local-user ${keyId}` : ''
     const encryptCmd = `gpg --yes --trust-model always ${keyOption} ${recipientArgs} -e -o "${encryptedFile}" "${tarFile}"`
 

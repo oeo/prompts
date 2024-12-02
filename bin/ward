@@ -11,8 +11,18 @@ import dotenv from 'dotenv'
 // Load environment variables
 dotenv.config()
 
+// Reload environment variables from .env file
+try {
+  const envConfig = dotenv.parse(readFileSync('.env'))
+  for (const k in envConfig) {
+    process.env[k] = envConfig[k]
+  }
+} catch (e) {
+  // .env file doesn't exist or can't be read, that's fine
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const ARCHIVE_DIR = path.join(process.cwd(), '.archives')
+const ARCHIVE_DIR = path.join(process.cwd(), process.env.WARD_ARCHIVE_FOLDER || '.archives')
 const PRIVATE_DIR = path.join(process.cwd(), process.env.WARD_PRIVATE_FOLDER || 'private')
 
 // Add private folder to .gitignore if not already present

@@ -64,7 +64,7 @@ const tempTar = path.join(archiveDir, 'temp.tar')
 
 try {
   // decrypt archive
-  const keyId = process.env.GPG_KEY_ID
+  const keyId = process.env.WARD_GPG_KEY
   const keyOption = keyId ? `--local-user ${keyId}` : ''
   execSync(`gpg --yes ${keyOption} -d -o "${tempTar}" "${latestArchive}"`)
 

@@ -76,8 +76,8 @@ function checkPrerequisites() {
 
     // Check .env configuration
     require('dotenv').config()
-    if (!process.env.GPG_RECIPIENTS) {
-      throw new Error('GPG_RECIPIENTS not set in .env')
+    if (!process.env.WARD_GPG_RECIPIENTS) {
+      throw new Error('WARD_GPG_RECIPIENTS not set in .env')
     }
     log('✓ .env configured')
 

@@ -60,19 +60,22 @@ try {
     execSync(`rm "${excludeFile}"`)
   }
 
-  // get recipients and key id
-  const recipients = process.env.GPG_RECIPIENTS
-  if (!recipients) {
-    throw new Error('GPG_RECIPIENTS not set in .env')
+  // Build encryption command
+  const keyId = process.env.WARD_GPG_KEY
+  const recipients = process.env.WARD_GPG_RECIPIENTS
+  
+  let recipientArgs = ''
+  if (recipients) {
+    // If recipients specified, encrypt for all of them
+    recipientArgs = recipients.split(',')
+      .map(r => `-r ${r.trim()}`)
+      .join(' ')
+  } else if (keyId) {
+    // If only key specified, encrypt just for that key
+    recipientArgs = `-r ${keyId}`
   }
+  // If neither specified, GPG will use default key
 
-  // build recipient arguments
-  const recipientArgs = recipients.split(',')
-    .map(r => `-r ${r.trim()}`)
-    .join(' ')
-
-  // build encryption command
-  const keyId = process.env.GPG_KEY_ID
   const keyOption = keyId ? `--local-user ${keyId}` : ''
   const encryptCmd = `gpg --yes --trust-model always ${keyOption} ${recipientArgs} -e -o "${encryptedFile}" "${tarFile}"`
 

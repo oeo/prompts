@@ -31,9 +31,9 @@ function createArchive(message) {
     execSync(`tar -cf "${tarFile}" -C "${PRIVATE_DIR}" .`)
 
     // get recipients and key id
-    const recipients = process.env.GPG_RECIPIENTS
+    const recipients = process.env.WARD_GPG_RECIPIENTS
     if (!recipients) {
-      throw new Error('GPG_RECIPIENTS not set in .env')
+      throw new Error('WARD_GPG_RECIPIENTS not set in .env')
     }
 
     // build recipient arguments
@@ -42,7 +42,7 @@ function createArchive(message) {
       .join(' ')
 
     // build encryption command
-    const keyId = process.env.GPG_KEY_ID
+    const keyId = process.env.WARD_GPG_KEY
     const keyOption = keyId ? `--local-user ${keyId}` : ''
     const encryptCmd = `gpg --yes --trust-model always ${keyOption} ${recipientArgs} -e -o "${encryptedFile}" "${tarFile}"`
 
@@ -83,7 +83,7 @@ function restoreFromArchive() {
 
   try {
     // decrypt archive
-    const keyId = process.env.GPG_KEY_ID
+    const keyId = process.env.WARD_GPG_KEY
     const keyOption = keyId ? `--local-user ${keyId}` : ''
     execSync(`gpg --yes ${keyOption} -d -o "${tempTar}" "${latestArchive}"`)
 

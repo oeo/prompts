@@ -43,9 +43,13 @@ function checkDirs() {
 }
 
 function checkEnv() {
-  if (!process.env.GPG_RECIPIENTS) {
-    log('error: GPG_RECIPIENTS not set in .env file')
-    log('hint: copy .env.example to .env and set your GPG recipients (comma-separated)')
+  // No need to check for WARD_GPG_RECIPIENTS anymore
+  // Just check if we have any GPG keys available
+  try {
+    execSync('gpg --list-secret-keys', { encoding: 'utf8' })
+  } catch (error) {
+    log('error: no GPG keys found')
+    log('hint: you need at least one GPG key pair for encryption/decryption')
     process.exit(1)
   }
 }
@@ -53,21 +57,21 @@ function checkEnv() {
 function checkGpg() {
   try {
     const output = execSync('gpg --list-secret-keys', { encoding: 'utf8' })
-    const recipients = process.env.GPG_RECIPIENTS.split(',').map(r => r.trim())
-    const keyId = process.env.GPG_KEY_ID
+    const keyId = process.env.WARD_GPG_KEY
+    const recipients = process.env.WARD_GPG_RECIPIENTS?.split(',').map(r => r.trim()) || []
     
-    // check all recipients exist
+    // If using specific key, validate it exists
+    if (keyId && !output.includes(keyId)) {
+      log(`error: specified WARD_GPG_KEY ${keyId} not found in secret keys`)
+      process.exit(1)
+    }
+
+    // If using recipients, validate they exist
     for (const recipient of recipients) {
       if (!output.includes(recipient)) {
         log(`error: GPG key for "${recipient}" not found`)
         process.exit(1)
       }
-    }
-
-    // if key id specified, validate it exists
-    if (keyId && !output.includes(keyId)) {
-      log(`error: specified GPG_KEY_ID ${keyId} not found in secret keys`)
-      process.exit(1)
     }
 
     // test encryption/decryption with archive

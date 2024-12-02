@@ -1,14 +1,21 @@
 {
-  "name": "encrypted-markdown-repo",
+  "name": "encrypted-git",
   "version": "1.0.0",
-  "description": "A Git repository setup for storing encrypted files",
+  "description": "Git repository with automatic file encryption",
+  "type": "module",
   "scripts": {
     "setup": "node bin/setup.js",
-    "restore": "rm -rf private && mkdir -p private && node bin/restore-from-archive.js",
-    "pull": "node bin/pull.js"
+    "pull": "node bin/pull.js",
+    "restore": "node bin/restore-from-archive.js",
+    "test": "node bin/test.js",
+    "watch": "node bin/watch-private.js"
   },
   "dependencies": {
-    "dotenv": "^16.0.0",
-    "minimatch": "^9.0.0"
+    "boxen": "^7.1.1",
+    "chalk": "^5.3.0",
+    "cli-table3": "^0.6.3",
+    "dotenv": "^16.3.1",
+    "minimatch": "^10.0.1",
+    "ora": "^7.0.1"
   }
 }

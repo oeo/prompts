@@ -1,9 +1,15 @@
 #!/usr/bin/env node
 
-require('dotenv').config()
-const { execSync } = require('child_process')
-const { existsSync, statSync, lstatSync, mkdirSync } = require('fs')
-const path = require('path')
+import { config } from 'dotenv'
+import { execSync } from 'child_process'
+import { existsSync, statSync, lstatSync, mkdirSync } from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+// Load environment variables
+config()
 
 function log(message) {
   console.log(message)
@@ -99,8 +105,7 @@ function checkGpg() {
       execSync(`rm -rf "${testDir}"`)
     }
   } catch (error) {
-    log('error: GPG is not properly installed or configured')
-    log(`details: ${error.message}`)
+    log(`error: GPG test failed: ${error.message}`)
     process.exit(1)
   }
 }

@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process')
-const { existsSync } = require('fs')
-const path = require('path')
+import { execSync } from 'child_process'
+import { existsSync } from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 function log(message) {
   console.log(`\x1b[36m${message}\x1b[0m`)
@@ -26,7 +29,7 @@ try {
   log('\nPulling latest changes...')
   cmd('git pull --rebase', true)
 
-  // restore from latest archive
+  // always restore from latest archive, even if no git changes
   log('\nRestoring from latest archive...')
   cmd('rm -rf private')
   cmd('mkdir -p private')

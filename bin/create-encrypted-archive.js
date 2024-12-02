@@ -1,10 +1,16 @@
 #!/usr/bin/env node
 
-require('dotenv').config()
-const { execSync } = require('child_process')
-const { existsSync, mkdirSync, readFileSync } = require('fs')
-const path = require('path')
-const { minimatch } = require('minimatch')
+import { config } from 'dotenv'
+import { execSync } from 'child_process'
+import { existsSync, mkdirSync, readFileSync } from 'fs'
+import path from 'path'
+import { minimatch } from 'minimatch'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+// Load environment variables
+config()
 
 // ensure directories exist
 const privateDir = path.join(process.cwd(), 'private')

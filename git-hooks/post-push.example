@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# restore from latest archive
+node bin/restore-from-archive.js 

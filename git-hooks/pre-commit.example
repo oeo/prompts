@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# validate gpg setup
+node bin/validate-encryption-setup.js
+if [ $? -ne 0 ]; then
+  echo "error: gpg setup validation failed"
+  exit 1
+fi
+
+# create encrypted archive
+node bin/create-encrypted-archive.js
+if [ $? -ne 0 ]; then
+  echo "error: failed to create encrypted archive"
+  exit 1
+fi
+
+exit 0 

@@ -157,8 +157,8 @@ ward restore 66b      # archive with hash 66b7d91
 ward restore 66b7d91  # archive with hash 66b7d91
 ```
 
-Options:
-- `--json` - Output in JSON format
+options:
+- `--json` - output in JSON format
 
 ### pack - create archive
 ```bash
@@ -169,10 +169,12 @@ ward pack             # create if changes detected
 ward pack --force     # create regardless of changes
 ```
 
-Options:
+options:
 - `--force` - create archive even if no changes detected
 
-### clean - remove old archives
+### clean 
+remove old archives
+
 ```bash
 ward clean  # remove all but most recent uncommitted archive
 ```

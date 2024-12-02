@@ -2,8 +2,6 @@
    <img src="assets/svg.svg" width="100" alt="ward2" />
 </div>
 
-# ward2
-
 `ward2` is a secure file archival tool that uses pgp encryption and git versioning. it helps you maintain encrypted archives of sensitive files while keeping track of changes over time.
 
 this is a complete rewrite of the [original ward](https://github.com/oeo/ward) project, expanding on its main idea with additional features and improved user experience.
@@ -68,7 +66,7 @@ that's it, you've created your first archive.
 ward ls                     # list all archives
 ward cat latest/test.txt    # view file contents
 ward cat 0/test.txt         # view file contents from index 0 (same as latest)
-ward restore                # restore latest archive and extract to ./private 
+ward restore                # restore latest archive and extract to ./private
 ```
 
 ![main menu](assets/menu.png)
@@ -201,7 +199,7 @@ ward pack --force     # create regardless of changes
 options:
 - `--force` - create archive even if no changes detected
 
-### clean 
+### clean
 remove old archives
 
 ```bash
@@ -249,7 +247,7 @@ latest/file.txt      # file from latest archive
 ## security
 - multiple recipients can decrypt archives
   - recipients are specified in the `.env` file
-- all files are encrypted using `which gpg` 
+- all files are encrypted using `which gpg`
 - keys never leave your system
 - archives can be safely stored in git
 

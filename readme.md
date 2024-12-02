@@ -2,6 +2,8 @@
    <img src="assets/svg.svg" width="100" alt="ward2" />
 </p>
 
+# ward2
+
 `ward2` is a secure file archival tool that uses pgp encryption and git versioning. it helps you maintain encrypted archives of sensitive files while keeping track of changes over time.
 
 this is a complete rewrite of the [original ward](https://github.com/oeo/ward) project, expanding on its main idea with additional features and improved user experience.

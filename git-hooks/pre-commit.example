@@ -3,6 +3,9 @@
 # Force remove any private files from git tracking
 git ls-files private/ | xargs -r git rm --cached
 
+# Remove any staged archives
+git restore --staged .archives/*.tar.gpg 2>/dev/null || true
+
 # Clean up any uncommitted archives except the most recent one
 node bin/cli.js clean
 
@@ -19,7 +22,11 @@ if git diff --cached --name-only | grep -q "^.archives/temp"; then
 fi
 
 # Stage only the most recent archive
-latest_archive=$(ls -t .archives/*.tar.gpg | head -n1)
+latest_archive=$(ls -t .archives/*.tar.gpg 2>/dev/null | head -n1)
 if [ -n "$latest_archive" ]; then
   git add "$latest_archive"
+  # Remove any other archives from staging
+  for archive in $(git diff --cached --name-only | grep "^.archives/.*\.tar\.gpg$" | grep -v "$(basename "$latest_archive")"); do
+    git restore --staged "$archive"
+  done
 fi 

@@ -8,7 +8,21 @@
 
 this is a complete rewrite of the [original ward](https://github.com/oeo/ward) project, expanding on its main idea with additional features and improved user experience.
 
-## why use this?
+## contents
+
+- [why use it?](#why-use-it)
+- [quick start](#quick-start)
+- [configuration](#configuration)
+- [commands](#commands)
+- [archive references](#archive-references)
+- [file paths](#file-paths)
+- [security](#security)
+- [contact](#contact)
+- [todo](#todo)
+
+---
+
+## why use it?
 
 ward solves several critical problems in managing sensitive files:
 
@@ -28,19 +42,6 @@ it's great for storing things in your repositories in a secure and private manne
 1. store copies of important documents and certificates
 
 ward is designed to be lightweight and maintainable, using only four well-known, trusted npm packages (chalk, dotenv, minimatch, minimist) - each with millions of monthly downloads.
-
-## contents
-
-- [quick start](#quick-start)
-- [configuration](#configuration)
-- [commands](#commands)
-- [archive references](#archive-references)
-- [file paths](#file-paths)
-- [security](#security)
-- [contact](#contact)
-- [todo](#todo)
-
----
 
 ## quick start
 

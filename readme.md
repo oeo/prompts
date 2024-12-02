@@ -6,7 +6,7 @@
 
 this is a complete rewrite of the [original ward](https://github.com/oeo/ward) project, expanding on its main idea with additional features and improved user experience.
 
-- [why?](#why)
+- [summary](#summary)
 - [quick start](#quick-start)
 - [configuration](#configuration)
 - [commands](#commands)
@@ -18,7 +18,7 @@ this is a complete rewrite of the [original ward](https://github.com/oeo/ward) p
 
 ---
 
-## why?
+## summary
 
 ward solves several critical problems in managing sensitive files:
 

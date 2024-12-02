@@ -83,43 +83,70 @@ function getGitInfo(filename) {
 function parseArchiveDate(filename) {
   try {
     if (filename.includes('_')) {
-      // Parse ISO format (2024-12-02_00-49-38-434Z)
+      // Parse ISO format (2024-12-02_02-25-48-328Z)
       const [datePart, timePart] = filename.split('_')
       const [year, month, day] = datePart.split('-').map(Number)
       const [hour, minute, second] = timePart.split(/[-Z]/g).filter(Boolean).map(Number)
       return new Date(Date.UTC(year, month - 1, day, hour, minute, second))
-    } else {
+    } else if (!isNaN(filename)) {
       // Parse Unix timestamp
       return new Date(parseInt(filename) * 1000)
+    } else {
+      // Return current date for unknown formats
+      return new Date()
     }
   } catch (e) {
     console.error('Error parsing date:', e)
-    return new Date(0) // Return epoch for invalid dates
+    return new Date() // Return current date for invalid formats
   }
 }
 
 function getArchives() {
-  if (!existsSync(ARCHIVE_DIR)) {
-    error('no archives directory found')
-  }
+  try {
+    // Get all commits with their archive files
+    const log = execCmd('git log --name-status --pretty=format:"%H|%an <%ae>|%s" -- .archives/*.tar.gpg')
+    if (!log) return []
 
-  return readdirSync(ARCHIVE_DIR)
-    .filter(f => f.endsWith('.tar.gpg') && f.includes('_'))
-    .map(f => {
-      const filePath = path.join(ARCHIVE_DIR, f)
-      const stats = statSync(filePath)
-      const gitInfo = getGitInfo(f)
-      const date = parseArchiveDate(f.split('.')[0])
-      
-      return {
-        name: f,
-        timestamp: Math.floor(date.getTime() / 1000),
-        date: date.toLocaleString(),
-        size: stats.size,
-        git: gitInfo
+    const archives = []
+    const commits = log.split('\n')
+    
+    for (let i = 0; i < commits.length; i++) {
+      const line = commits[i].trim()
+      if (!line) continue
+
+      if (line.includes('|')) {
+        // This is a commit line
+        const [hash, author, message] = line.split('|')
+        
+        // Look ahead for the file
+        let j = i + 1
+        while (j < commits.length && !commits[j].includes('|')) {
+          const status = commits[j].trim()
+          if (status.startsWith('A\t')) {
+            // Found an added file
+            const archiveFile = status.substring(2)
+            const size = execCmd(`git ls-tree -r -l ${hash} -- ${archiveFile} | awk '{print $4}'`)
+            
+            archives.push({
+              name: path.basename(archiveFile),
+              size: parseInt(size) || 0,
+              git: {
+                hash: hash.slice(0, 7),
+                author,
+                message
+              }
+            })
+          }
+          j++
+        }
       }
-    })
-    .sort((a, b) => b.timestamp - a.timestamp)
+    }
+
+    return archives
+  } catch (e) {
+    console.error('Error:', e.message)
+    return []
+  }
 }
 
 function getOutputFormat(args) {

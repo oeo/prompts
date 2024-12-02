@@ -13,7 +13,7 @@ this is a complete rewrite of the [original ward](https://github.com/oeo/ward) p
 
 ## configuration (.env file)
 
-`ward` instances are configured using environment variables in your `.env` file:
+`ward` instances are configured using environment variables or in your local `.env` file:
 
 ### gpg
 - `WARD_GPG_KEY` (optional) - specific GPG key to use for encryption/decryption
@@ -35,7 +35,7 @@ this is a complete rewrite of the [original ward](https://github.com/oeo/ward) p
   - relative to project root
   - stores the encrypted archives
 
-Example `.env` file
+example `.env` file:
 
 ```env
 # use specific GPG key
@@ -79,7 +79,8 @@ ward restore                # restore latest archive and extract to ./private
 
 ## commands
 
-### ls - list archives
+### ls
+list archives and files within them.
 
 ![listing archives](assets/ls.png)
 
@@ -97,7 +98,9 @@ options:
 - `--json` - output in JSON format
 - `--limit N` - limit output to N entries (0 for unlimited)
 
-### cat - view file contents
+### cat
+view file contents from an archive.
+
 ```bash
 ward cat <archive-path>
 
@@ -108,7 +111,9 @@ ward cat 66b/config.json     # from archive with hash 66b7d91
 ward cat 66b7d91/config.json # from archive with hash 66b7d91
 ```
 
-### cp - copy files
+### cp
+copy files from any archive to the local filesystem.
+
 ```bash
 ward cp <archive-path> <destination>
 
@@ -118,7 +123,9 @@ ward cp '2/*.md' ./docs/           # copy all markdown files
 ward cp '66b/*.txt' ./backup/      # copy from specific archive
 ```
 
-### less - view with pager
+### less
+view file contents from an archive with pager.
+
 ```bash
 ward less <archive-path>
 
@@ -129,7 +136,9 @@ ward less 66b/config.json
 ward less 66b7d91/config.json
 ```
 
-### verify - check integrity
+### verify
+check integrity of an archive.
+
 ```bash
 ward verify [archive-ref]
 
@@ -142,8 +151,8 @@ ward verify 66b        # verify hash 66b7d91
 options:
 - `--json` - output in JSON format
 
-### restore - extract files
-this will restore the archive to the `private` directory.
+### restore
+extract files. this will restore the specified archive to the `private` directory.
 
 ![restoring an archive](assets/restore.png)
 
@@ -160,7 +169,9 @@ ward restore 66b7d91  # archive with hash 66b7d91
 options:
 - `--json` - output in JSON format
 
-### pack - create archive
+### pack
+create a new archive based on the contents of the `private` directory.
+
 ```bash
 ward pack [options]
 

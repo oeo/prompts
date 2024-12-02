@@ -18,8 +18,6 @@ this is a complete rewrite of the [original ward](https://github.com/oeo/ward) p
 - [contact](#contact)
 - [todo](#todo)
 
----
-
 ## summary
 
 ward solves several critical problems in managing sensitive files:
@@ -107,9 +105,12 @@ ward ls [options] [archive-ref]
 
 # examples
 ward ls                  # list all archives
-ward ls --limit 5        # show 5 most recent
-ward ls 2                # show archive at index 2
-ward ls 66b              # show archive with hash 66b7d91
+ward ls --limit 5        # show 5 most recent archives
+ward ls latest           # list files in the most recent archive
+ward ls 0                # list files in the most recent archive (same as above)
+ward ls 1                # list files in the 2nd most recent archive
+ward ls 66b              # list files in the archive with commit hash 66b7d91
+ward ls 66b7d91          # list files in the archive with commit hash 66b7d91
 ```
 
 options:
@@ -124,9 +125,9 @@ ward cat <archive-path>
 
 # examples
 ward cat latest/test.txt     # from latest archive
-ward cat 2/*.md              # all markdown files from index 2
-ward cat 66b/config.json     # from archive with hash 66b7d91
-ward cat 66b7d91/config.json # from archive with hash 66b7d91
+ward cat '2/*.md'              # all markdown files from index 2
+ward cat 66b/config.json     # from archive with commit hash 66b7d91
+ward cat 66b7d91/config.json # from archive with commit hash 66b7d91
 ```
 
 ### cp
@@ -149,7 +150,7 @@ ward less <archive-path>
 
 # examples
 ward less latest/test.txt
-ward less 2/*.md
+ward less '2/*.md'
 ward less 66b/config.json
 ward less 66b7d91/config.json
 ```
@@ -162,15 +163,16 @@ ward verify [archive-ref]
 
 # examples
 ward verify            # verify latest
+ward verify 0          # verify latest
 ward verify 2          # verify index 2
-ward verify 66b        # verify hash 66b7d91
+ward verify 66b        # verify archive with commit hash 66b7d91
 ```
 
 options:
 - `--json` - output in JSON format
 
 ### restore
-extract files. this will restore the specified archive to the `private` directory.
+extract files. this will restore the specified archive and replace any files in your vault or `private` directory.
 
 ![restoring an archive](assets/restore.png)
 
@@ -180,8 +182,8 @@ ward restore [archive-ref]
 # examples
 ward restore          # latest archive
 ward restore 2        # archive at index 2
-ward restore 66b      # archive with hash 66b7d91
-ward restore 66b7d91  # archive with hash 66b7d91
+ward restore 66b      # archive with commit hash 66b7d91
+ward restore 66b7d91  # archive with commit hash 66b7d91
 ```
 
 options:
@@ -208,15 +210,13 @@ remove old archives
 ward clean           # remove all but most recent uncommitted archive
 ```
 
----
-
 ## archive references
 archives can be referenced in three ways:
 
 1. **by index number**
    ```bash
    ward ls 0         # most recent archive
-   ward ls 1         # second archive in list
+   ward ls 1         # second most recent archive
    ```
 
 2. **by commit hash**
@@ -237,7 +237,7 @@ ward uses unix-like paths to access files within archives:
 ```bash
 latest/file.txt      # file from latest archive
 0/file.txt           # file from index 0 (same as latest)
-2/docs/*.md          # all markdown files from archive index 2
+2/docs/*.md          # all markdown files from a subfolder of archive index 2
 66b/config.json      # config from archive with commit hash 66b7d91
 66b7d91/config.json  # config from archive with commit hash 66b7d91
 ```
@@ -248,16 +248,14 @@ latest/file.txt      # file from latest archive
 
 ## security
 - multiple recipients can decrypt archives
-  - recipients are specified in the `.env` file
+  - recipients are specified in your environment file
 - all files are encrypted using `which gpg`
 - keys never leave your system
 - archives can be safely stored in git
 
----
-
 ## contact
 
-you can reach me at [boobie@riseup.net](mailto:boobie@riseup.net).
+[boobie@riseup.net](mailto:boobie@riseup.net)
 
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
@@ -312,8 +310,6 @@ cpIyEvrTMN+vHEZA4+ck2u3eIhW3mMFvZ8hpSjjBca/PKDNH/9k=
 =LIIT
 -----END PGP PUBLIC KEY BLOCK-----
 ```
-
----
 
 ## todo
 - [x] add support for gpg passphrase

@@ -11,6 +11,34 @@ this is a complete rewrite of the [original ward](https://github.com/oeo/ward) p
 3. `npm install` to install dependencies
 4. the `ward` binary is available in `./bin/ward`
 
+## quick overview
+
+![main menu](assets/menu.png)
+
+put files in the `./private` directory and create an encrypted archive.
+
+```bash
+echo "hello" > ./private/test.txt
+ward pack
+```
+
+![creating and committing an archive](assets/pack-commit.png)
+
+commit the archive.
+
+```bash
+git commit -m "add new archive"
+```
+
+access files:
+
+```bash
+ward ls                     # list all archives
+ward cat latest/test.txt    # view file contents
+ward cat 0/test.txt         # view file contents from index 0 (same as latest)
+ward restore                # restore latest archive and extract to ./private 
+```
+
 ## configuration (.env file)
 
 `ward` instances are configured using environment variables or in your local `.env` file:
@@ -47,34 +75,6 @@ WARD_GPG_RECIPIENTS=user1@example.com,user2@example.com
 # custom folder paths
 WARD_PRIVATE_FOLDER=secret-stuff
 WARD_ARCHIVE_FOLDER=my-archives
-```
-
-## usage 
-
-![main menu](assets/menu.png)
-
-put files in the `./private` directory and create an encrypted archive.
-
-```bash
-echo "hello" > ./private/test.txt
-ward pack
-```
-
-![creating and committing an archive](assets/pack-commit.png)
-
-commit the archive.
-
-```bash
-git commit -m "add new archive"
-```
-
-access files:
-
-```bash
-ward ls                     # list all archives
-ward cat latest/test.txt    # view file contents
-ward cat 0/test.txt         # view file contents from index 0 (same as latest)
-ward restore                # restore latest archive and extract to ./private 
 ```
 
 ## commands

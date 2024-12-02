@@ -33,7 +33,11 @@ const encignorePatterns = existsSync(encignoreFile)
   : []
 
 // create timestamp for archive name
-const timestamp = Math.floor(Date.now() / 1000)
+const now = new Date()
+const timestamp = now.toISOString()
+  .replace(/[:.]/g, '-')  // Replace colons and dots with hyphens
+  .replace('T', '_')      // Replace T with underscore
+  .split('.')[0]          // Remove milliseconds
 
 const tarFile = path.join(archiveDir, `${timestamp}.tar`)
 const encryptedFile = path.join(archiveDir, `${timestamp}.tar.gpg`)

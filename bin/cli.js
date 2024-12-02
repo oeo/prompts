@@ -88,10 +88,23 @@ function getArchives() {
     .map(f => {
       const stats = statSync(path.join(archiveDir, f))
       const gitInfo = getGitInfo(f)
+      
+      // Try to parse timestamp from filename
+      let timestamp
+      if (f.includes('_')) {
+        // Parse from formatted date (2024-12-01_23-37-27-060)
+        const dateStr = f.split('.')[0]
+        const date = new Date(dateStr.replace(/_/g, ' ').replace(/-/g, ':'))
+        timestamp = Math.floor(date.getTime() / 1000)
+      } else {
+        // Parse from Unix timestamp
+        timestamp = parseInt(f.split('.')[0])
+      }
+
       return {
         name: f,
-        timestamp: parseInt(f.split('.')[0]),
-        date: new Date(parseInt(f.split('.')[0]) * 1000).toLocaleString(),
+        timestamp,
+        date: new Date(timestamp * 1000).toLocaleString(),
         size: stats.size,
         git: gitInfo
       }

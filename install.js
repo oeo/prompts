@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process');
-const { readdirSync } = require('fs');
-const path = require('path');
+import { execSync } from 'child_process';
+import { readdirSync } from 'fs';
+import path from 'path';
 
 try {
   // install dependencies
@@ -12,11 +12,11 @@ try {
   // run validation
   console.log('Validating setup...');
   execSync('node bin/validate-encryption-setup.js', { stdio: 'inherit' });
-  
+
   // initialize archive
   console.log('Initializing archive...');
   execSync('node bin/init-archive.js', { stdio: 'inherit' });
-  
+
   // install git hooks
   console.log('Installing git hooks...');
   const hookFiles = readdirSync('git-hooks');
@@ -26,10 +26,15 @@ try {
       execSync(`mv git-hooks/${file} .git/hooks/${hookName}`, { stdio: 'inherit' });
     }
   }
+
   execSync('chmod +x .git/hooks/*', { stdio: 'inherit' });
-  
+
+  // create symlink to bin script
+  console.log('Creating symlink to bin script...');
+  execSync(`ln -s ${path.resolve('./bin/cli.js')} ${path.resolve('./cli')}`, { stdio: 'inherit' });
+
   console.log('Installation complete!');
 } catch (error) {
   console.error(`Installation failed: ${error.message}`);
   process.exit(1);
-} 
+}

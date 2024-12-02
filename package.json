@@ -1,7 +1,7 @@
 {
   "name": "ward",
   "version": "2.0.0-beta",
-  "description": "Secure file archival tool with GPG encryption and Git versioning",
+  "description": "secure file archival tool with pgp encryption and git versioning",
   "type": "module",
   "scripts": {
     "setup": "node bin/setup.js",

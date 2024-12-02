@@ -1,20 +1,39 @@
-# ⌧ ward
+# ward2
 
-a secure file archival tool that uses GPG encryption and Git versioning. ward helps you maintain encrypted archives of sensitive files while keeping track of changes over time.
+`ward2` is a secure file archival tool that uses pgp encryption and git versioning. it helps you maintain encrypted archives of sensitive files while keeping track of changes over time.
 
-this is a complete rewrite of the [original ward](https://github.com/oeo/ward) project, expanding on its core functionality with additional features and improved user experience.
+this is a complete rewrite of the [original ward](https://github.com/oeo/ward) project, expanding on its main idea with additional features and improved user experience.
+
+**why use ward2?**
+ward solves several critical problems in managing sensitive files:
+
+1. securely propagates environment variables and secrets between team members
+1. maintains a complete version history of sensitive files
+1. enables secure file sharing through pgp encryption
+1. provides easy rollback to previous versions when needed
+
+ward builds on proven encryption standards rather than implementing custom cryptography.
+
+ward is great for storing things in your repositories in a secure and private manner, and particularly valuable as a secure backup solution as well.
+
+1. securely keep updated project-specific environment secrets in your repository
+1. store recovery codes for all your critical services
+1. keep encrypted copies of important credentials and keys
+1. maintain backup 2fa/totp secrets
+1. store copies of important documents and certificates
 
 ## contents
 
-- [manual install](#manual-install)
-- [configuration](#configuration)
+- [install](#install)
+- [overview](#overview)
+- [config](#config)
 - [commands](#commands)
 - [archive references](#archive-references)
 - [file paths](#file-paths)
 - [security](#security)
 - [@todo](#todo)
 
-## manual install
+## install
 
 1. clone the repository
 2. make sure you have `gpg` installed and configured
@@ -51,10 +70,10 @@ ward restore                # restore latest archive and extract to ./private
 
 ![main menu](assets/menu.png)
 
-## configuration
+## config
 `ward` instances are configured using environment variables or in your local `.env` file.
 
-**example `.env`**
+**example env file**
 
 ```env
 # format: last 16 characters of your key ID, email, or name
@@ -223,12 +242,14 @@ latest/file.txt      # file from latest archive
 - paths are relative to archive root
 
 ## security
-- all files are encrypted using gpg
-- private keys never leave your system
+- multiple recipients can decrypt archives
+  - recipients are specified in the `.env` file
+- all files are encrypted using `which gpg` 
+- keys never leave your system
 - archives can be safely stored in git
 
 ## @todo
-- [x] add support for GPG key passphrase
+- [x] add support for gpg passphrase
 - [ ] restructure so that the ward package can be imported into other projects easily
 - [ ] bin/ward should be smaller in terms of lines of code
 - [ ] dockerize to remove dependency and installation issues

@@ -801,7 +801,8 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
       execCmd(`cd "${tempDir}" && tar xf temp.tar`)
 
       // Compare directories
-      const diff = execCmd(`diff -r "${path.join(tempDir, 'private')}" "${PRIVATE_DIR}" 2>&1 || true`)
+      const privateFolder = process.env.WARD_PRIVATE_FOLDER || 'private'
+      const diff = execCmd(`diff -r "${tempDir}/${privateFolder}" "${PRIVATE_DIR}" 2>&1 || true`)
       if (!diff) {
         console.error('No changes detected in ' + PRIVATE_DIR + '. Use --force to create archive anyway.')
         process.exit(1)
@@ -818,7 +819,8 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
         .reverse()[0]
       
       if (latest) {
-        execCmd(`git add ".archives/${latest}"`)
+        const relativeArchivePath = path.relative(process.cwd(), path.join(ARCHIVE_DIR, latest))
+        execCmd(`git add "${relativeArchivePath}"`)
         console.log(`\nStaged new archive: ${latest}`)
         console.log('\nTip: Run git commit -m "chore: add new archive" to save these changes')
       }

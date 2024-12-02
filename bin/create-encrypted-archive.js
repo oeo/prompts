@@ -13,8 +13,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 config()
 
 // ensure directories exist
-const privateDir = path.join(process.cwd(), 'private')
-const archiveDir = path.join(process.cwd(), '.archives')
+const privateDir = path.join(process.cwd(), process.env.WARD_PRIVATE_FOLDER || 'private')
+const archiveDir = path.join(process.cwd(), process.env.WARD_ARCHIVE_FOLDER || '.archives')
 
 if (!existsSync(privateDir)) {
   mkdirSync(privateDir, { recursive: true })
@@ -85,8 +85,9 @@ try {
   // cleanup tar file
   execSync(`rm "${tarFile}"`)
 
-  // stage encrypted archive
-  execSync(`git add "${encryptedFile}"`)
+  // stage encrypted archive using relative path
+  const relativeArchivePath = path.relative(process.cwd(), encryptedFile)
+  execSync(`git add "${relativeArchivePath}"`)
 
   console.log(`created encrypted archive: ${encryptedFile}`)
 } catch (error) {

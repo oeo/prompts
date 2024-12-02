@@ -31,8 +31,9 @@ try {
 
   // always restore from latest archive, even if no git changes
   log('\nRestoring from latest archive...')
-  cmd('rm -rf private')
-  cmd('mkdir -p private')
+  const privateDir = process.env.WARD_PRIVATE_FOLDER || 'private'
+  cmd(`rm -rf ${privateDir}`)
+  cmd(`mkdir -p ${privateDir}`)
   cmd('node bin/restore-from-archive.js', true)
 
   // pop stash if we stashed

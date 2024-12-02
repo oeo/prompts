@@ -5,8 +5,8 @@ const { existsSync, mkdirSync } = require('fs')
 const path = require('path')
 
 // common paths
-const PRIVATE_DIR = path.join(process.cwd(), 'private')
-const ARCHIVE_DIR = path.join(process.cwd(), '.archives')
+const PRIVATE_DIR = path.join(process.cwd(), process.env.WARD_PRIVATE_FOLDER || 'private')
+const ARCHIVE_DIR = path.join(process.cwd(), process.env.WARD_ARCHIVE_FOLDER || '.archives')
 
 function ensureDirectories() {
   if (!existsSync(PRIVATE_DIR)) {
@@ -30,19 +30,22 @@ function createArchive(message) {
     // create tarball
     execSync(`tar -cf "${tarFile}" -C "${PRIVATE_DIR}" .`)
 
-    // get recipients and key id
-    const recipients = process.env.WARD_GPG_RECIPIENTS
-    if (!recipients) {
-      throw new Error('WARD_GPG_RECIPIENTS not set in .env')
-    }
-
-    // build recipient arguments
-    const recipientArgs = recipients.split(',')
-      .map(r => `-r ${r.trim()}`)
-      .join(' ')
-
-    // build encryption command
+    // Build encryption command
     const keyId = process.env.WARD_GPG_KEY
+    const recipients = process.env.WARD_GPG_RECIPIENTS
+    
+    let recipientArgs = ''
+    if (recipients) {
+      // If recipients specified, encrypt for all of them
+      recipientArgs = recipients.split(',')
+        .map(r => `-r ${r.trim()}`)
+        .join(' ')
+    } else if (keyId) {
+      // If only key specified, encrypt just for that key
+      recipientArgs = `-r ${keyId}`
+    }
+    // If neither specified, GPG will use default key
+
     const keyOption = keyId ? `--local-user ${keyId}` : ''
     const encryptCmd = `gpg --yes --trust-model always ${keyOption} ${recipientArgs} -e -o "${encryptedFile}" "${tarFile}"`
 
@@ -67,7 +70,7 @@ function restoreFromArchive() {
   ensureDirectories()
 
   // find latest archive
-  const archives = execSync('ls -1 .archives/*.tar.gpg 2>/dev/null || true', { encoding: 'utf8' })
+  const archives = execSync(`ls -1 ${ARCHIVE_DIR}/*.tar.gpg 2>/dev/null || true`, { encoding: 'utf8' })
     .split('\n')
     .filter(Boolean)
     .sort()

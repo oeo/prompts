@@ -12,8 +12,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 config()
 
 // ensure directories exist
-const privateDir = path.join(process.cwd(), 'private')
-const archiveDir = path.join(process.cwd(), '.archives')
+const privateDir = path.join(process.cwd(), process.env.WARD_PRIVATE_FOLDER || 'private')
+const archiveDir = path.join(process.cwd(), process.env.WARD_ARCHIVE_FOLDER || '.archives')
 
 if (!existsSync(privateDir)) {
   mkdirSync(privateDir, { recursive: true })
@@ -23,7 +23,7 @@ if (!existsSync(archiveDir)) {
 }
 
 // create initial archive if none exists
-const archives = execSync('ls -1 .archives/*.tar.gpg 2>/dev/null || true', { encoding: 'utf8' })
+const archives = execSync(`ls -1 ${archiveDir}/*.tar.gpg 2>/dev/null || true`, { encoding: 'utf8' })
 if (!archives.trim()) {
   console.log('creating initial empty archive...')
   
@@ -41,19 +41,22 @@ if (!archives.trim()) {
     // create empty tarball
     execSync(`tar -cf "${tarFile}" -C "${privateDir}" . || true`)
 
-    // get recipients and key id
-    const recipients = process.env.WARD_GPG_RECIPIENTS
-    if (!recipients) {
-      throw new Error('WARD_GPG_RECIPIENTS not set in .env')
-    }
-
-    // build recipient arguments
-    const recipientArgs = recipients.split(',')
-      .map(r => `-r ${r.trim()}`)
-      .join(' ')
-
-    // build encryption command
+    // Build encryption command
     const keyId = process.env.WARD_GPG_KEY
+    const recipients = process.env.WARD_GPG_RECIPIENTS
+    
+    let recipientArgs = ''
+    if (recipients) {
+      // If recipients specified, encrypt for all of them
+      recipientArgs = recipients.split(',')
+        .map(r => `-r ${r.trim()}`)
+        .join(' ')
+    } else if (keyId) {
+      // If only key specified, encrypt just for that key
+      recipientArgs = `-r ${keyId}`
+    }
+    // If neither specified, GPG will use default key
+
     const keyOption = keyId ? `--local-user ${keyId}` : ''
     const encryptCmd = `gpg --yes --trust-model always ${keyOption} ${recipientArgs} -e -o "${encryptedFile}" "${tarFile}"`
 
@@ -63,8 +66,9 @@ if (!archives.trim()) {
     // cleanup tar file
     execSync(`rm "${tarFile}"`)
 
-    // stage encrypted archive
-    execSync(`git add "${encryptedFile}"`)
+    // stage encrypted archive using relative path
+    const relativeArchivePath = path.relative(process.cwd(), encryptedFile)
+    execSync(`git add "${relativeArchivePath}"`)
 
     console.log(`created initial archive: ${encryptedFile}`)
   } catch (error) {

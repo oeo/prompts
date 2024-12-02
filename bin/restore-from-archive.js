@@ -12,8 +12,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 config()
 
 // ensure directories exist
-const privateDir = path.join(process.cwd(), 'private')
-const archiveDir = path.join(process.cwd(), '.archives')
+const privateDir = path.join(process.cwd(), process.env.WARD_PRIVATE_FOLDER || 'private')
+const archiveDir = path.join(process.cwd(), process.env.WARD_ARCHIVE_FOLDER || '.archives')
 
 if (!existsSync(privateDir)) {
   mkdirSync(privateDir, { recursive: true })

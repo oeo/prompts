@@ -16,8 +16,8 @@ function log(message) {
 }
 
 function checkDirs() {
-  const privateDir = path.join(process.cwd(), 'private')
-  const archiveDir = path.join(process.cwd(), '.archives')
+  const privateDir = path.join(process.cwd(), process.env.WARD_PRIVATE_FOLDER || 'private')
+  const archiveDir = path.join(process.cwd(), process.env.WARD_ARCHIVE_FOLDER || '.archives')
 
   // check/create private directory
   if (!existsSync(privateDir)) {
@@ -162,10 +162,13 @@ function checkGitignore() {
   }
 
   const content = execSync('cat .gitignore', { encoding: 'utf8' })
+  const privateDir = process.env.WARD_PRIVATE_FOLDER || 'private'
+  const archiveDir = process.env.WARD_ARCHIVE_FOLDER || '.archives'
+  
   const required = [
-    'private/*',
-    '.archives/temp.tar',
-    '!.archives/*.tar.gpg'
+    `${privateDir}/*`,
+    `${archiveDir}/temp.tar`,
+    `!${archiveDir}/*.tar.gpg`
   ]
 
   for (const rule of required) {

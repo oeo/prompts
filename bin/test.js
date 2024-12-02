@@ -34,7 +34,12 @@ function checkPrerequisites() {
     }
 
     // Check required directories
-    const dirs = ['private', '.archives', 'bin', 'git-hooks']
+    const dirs = [
+      process.env.WARD_PRIVATE_FOLDER || 'private',
+      process.env.WARD_ARCHIVE_FOLDER || '.archives',
+      'bin',
+      'git-hooks'
+    ]
     for (const dir of dirs) {
       if (!existsSync(dir)) {
         throw new Error(`Missing required directory: ${dir}`)

@@ -1,0 +1,24 @@
+# Example .encignore file
+# Works just like .gitignore but for archive creation
+
+# Ignore temp files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore specific directories
+tmp/
+temp/
+cache/
+node_modules
+
+# Ignore specific file types
+*.log
+*.bak
+*.old
+

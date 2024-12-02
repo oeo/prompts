@@ -2,8 +2,13 @@
   "name": "encrypted-markdown-repo",
   "version": "1.0.0",
   "description": "A Git repository setup for storing encrypted files",
+  "scripts": {
+    "setup": "node bin/setup.js",
+    "restore": "rm -rf private && mkdir -p private && node bin/restore-from-archive.js",
+    "pull": "node bin/pull.js"
+  },
   "dependencies": {
     "dotenv": "^16.0.0",
     "minimatch": "^9.0.0"
   }
-} 
+}

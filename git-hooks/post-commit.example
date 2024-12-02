@@ -1,4 +1,0 @@
-#!/bin/sh
-
-# push changes to remote
-git push 

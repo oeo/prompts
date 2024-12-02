@@ -21,15 +21,18 @@ if (!existsSync(archiveDir)) {
 // find latest archive
 const archives = readdirSync(archiveDir)
   .filter(f => f.endsWith('.tar.gpg'))
-  .sort()
-  .reverse()
+  .map(f => ({
+    name: f,
+    timestamp: parseInt(f.split('.')[0])
+  }))
+  .sort((a, b) => b.timestamp - a.timestamp) // sort by timestamp descending
 
 if (archives.length === 0) {
   console.log('no archives found')
   process.exit(0)
 }
 
-const latestArchive = path.join(archiveDir, archives[0])
+const latestArchive = path.join(archiveDir, archives[0].name)
 const tempTar = path.join(archiveDir, 'temp.tar')
 
 try {

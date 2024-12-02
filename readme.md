@@ -1,5 +1,5 @@
 <div align="center">
-   <img src="assets/svg.svg" alt="ward logo" />
+   <img src="assets/svg.svg" width="200" alt="ward2" />
 </div>
 
 # ward2

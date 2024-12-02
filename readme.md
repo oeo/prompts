@@ -11,7 +11,6 @@ this is a complete rewrite of the [original ward](https://github.com/oeo/ward) p
 - [commands](#commands)
 - [archive references](#archive-references)
 - [file paths](#file-paths)
-- [how it works](#how-it-works)
 - [security](#security)
 
 ## manual install
@@ -21,9 +20,9 @@ this is a complete rewrite of the [original ward](https://github.com/oeo/ward) p
 3. `npm install` to install dependencies
 4. the `ward` binary is available in `./bin/ward`
 
-## quick overview
-
 ![main menu](assets/menu.png)
+
+## quick overview
 
 put files in the `./private` directory and create an encrypted archive.
 
@@ -31,8 +30,6 @@ put files in the `./private` directory and create an encrypted archive.
 echo "hello" > ./private/test.txt
 ward pack
 ```
-
-![creating and committing an archive](assets/pack-commit.png)
 
 commit the archive.
 
@@ -49,7 +46,9 @@ ward cat 0/test.txt         # view file contents from index 0 (same as latest)
 ward restore                # restore latest archive and extract to ./private 
 ```
 
-## configuration (.env file)
+![creating and committing an archive](assets/pack-commit.png)
+
+## configuration
 
 `ward` instances are configured using environment variables or in your local `.env` file:
 

@@ -12,6 +12,44 @@ A secure file archival tool that uses GPG encryption and Git versioning. Ward he
 3. Make sure you have GPG installed and configured
 4. The `ward` binary is in ./bin/ward
 
+## Configuration
+
+Ward can be configured using environment variables in your `.env` file:
+
+### GPG Configuration
+- `WARD_GPG_KEY` (optional) - Specific GPG key to use for encryption/decryption
+  - Format: last 16 characters of your key ID, email, or name
+  - If not set, uses your default GPG key
+  
+- `WARD_GPG_RECIPIENTS` (optional) - Additional GPG recipients who can decrypt files
+  - Format: Comma-separated list of emails or key IDs
+  - Example: `user1@example.com,user2@example.com`
+  - If not set, encrypts only for WARD_GPG_KEY or default key
+
+### Directory Configuration
+- `WARD_PRIVATE_FOLDER` (optional) - Custom private folder path
+  - Default: `private`
+  - Relative to project root
+  - Contains the files to be encrypted
+
+- `WARD_ARCHIVE_FOLDER` (optional) - Custom archive folder path
+  - Default: `.archives`
+  - Relative to project root
+  - Stores the encrypted archives
+
+Example `.env` file:
+```env
+# Use specific GPG key
+WARD_GPG_KEY=your.email@example.com
+
+# Allow multiple recipients to decrypt
+WARD_GPG_RECIPIENTS=user1@example.com,user2@example.com
+
+# Custom folder paths
+WARD_PRIVATE_FOLDER=secret-stuff
+WARD_ARCHIVE_FOLDER=my-archives
+```
+
 ## Usage 
 
 1. Put files in the `./private` directory

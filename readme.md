@@ -81,7 +81,6 @@ WARD_ARCHIVE_FOLDER=my-archives
 ### ls - list archives
 
 ![listing archives](assets/ls.png)
-![viewing archive commit details](assets/ls-commit.png)
 
 ```bash
 ward ls [options] [archive-ref]

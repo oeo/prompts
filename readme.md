@@ -31,7 +31,6 @@ ward is designed to be lightweight and maintainable, using only four well-known,
 
 ## contents
 
-- [install](#install)
 - [quick start](#quick-start)
 - [configuration](#configuration)
 - [commands](#commands)
@@ -41,7 +40,9 @@ ward is designed to be lightweight and maintainable, using only four well-known,
 - [contact](#contact)
 - [todo](#todo)
 
-## install
+---
+
+## quick start
 
 1. clone the repository
 2. make sure you have `gpg` installed and configured
@@ -50,9 +51,7 @@ ward is designed to be lightweight and maintainable, using only four well-known,
 
 ![help menu](assets/help.png)
 
-## quick start
-
-put files in the `./private` directory and create an encrypted archive, commit the archive to your git repository.
+now, put some files in the `./private` directory and use ward to pack them into an archive, then commit the archive to your git repository.
 
 ```bash
 echo "hello" > ./private/test.txt
@@ -61,6 +60,8 @@ git commit -m "add new archive"
 ```
 
 ![creating and committing an archive](assets/pack-commit.png)
+
+that's it, you've created your first archive.
 
 **start using your ward vault**
 
@@ -208,6 +209,8 @@ remove old archives
 ward clean           # remove all but most recent uncommitted archive
 ```
 
+---
+
 ## archive references
 archives can be referenced in three ways:
 
@@ -250,6 +253,8 @@ latest/file.txt      # file from latest archive
 - all files are encrypted using `which gpg` 
 - keys never leave your system
 - archives can be safely stored in git
+
+---
 
 ## contact
 
@@ -308,6 +313,8 @@ cpIyEvrTMN+vHEZA4+ck2u3eIhW3mMFvZ8hpSjjBca/PKDNH/9k=
 =LIIT
 -----END PGP PUBLIC KEY BLOCK-----
 ```
+
+---
 
 ## todo
 - [x] add support for gpg passphrase

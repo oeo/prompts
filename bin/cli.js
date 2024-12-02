@@ -103,42 +103,41 @@ function parseArchiveDate(filename) {
 
 function getArchives() {
   try {
-    // Get all commits with their archive files
-    const log = execCmd('git log --name-status --pretty=format:"%H|%an <%ae>|%s" -- .archives/*.tar.gpg')
+    // Get all commits that added archives with their details
+    const log = execCmd(`
+      git log --diff-filter=A --format="commit: %H%n\
+author: %an <%ae>%n\
+message: %s%n\
+files:" --name-only -- .archives/*.tar.gpg
+    `)
     if (!log) return []
 
     const archives = []
-    const commits = log.split('\n')
+    const commits = log.split('\ncommit: ')
     
-    for (let i = 0; i < commits.length; i++) {
-      const line = commits[i].trim()
-      if (!line) continue
+    for (const commit of commits) {
+      if (!commit.trim()) continue
 
-      if (line.includes('|')) {
-        // This is a commit line
-        const [hash, author, message] = line.split('|')
+      const lines = commit.split('\n')
+      const hash = lines[0].trim()
+      const author = lines.find(l => l.startsWith('author: '))?.substring(8)
+      const message = lines.find(l => l.startsWith('message: '))?.substring(9)
+      const files = lines.slice(lines.indexOf('files:') + 1)
+        .filter(f => f.trim() && f.endsWith('.tar.gpg'))
+
+      for (const archiveFile of files) {
+        // Get file size at commit time
+        const size = execCmd(`git ls-tree -r -l ${hash} -- ${archiveFile} | awk '{print $4}'`)
         
-        // Look ahead for the file
-        let j = i + 1
-        while (j < commits.length && !commits[j].includes('|')) {
-          const status = commits[j].trim()
-          if (status.startsWith('A\t')) {
-            // Found an added file
-            const archiveFile = status.substring(2)
-            const size = execCmd(`git ls-tree -r -l ${hash} -- ${archiveFile} | awk '{print $4}'`)
-            
-            archives.push({
-              name: path.basename(archiveFile),
-              size: parseInt(size) || 0,
-              git: {
-                hash: hash.slice(0, 7),
-                author,
-                message
-              }
-            })
+        archives.push({
+          name: path.basename(archiveFile),
+          size: parseInt(size) || 0,
+          git: {
+            hash: hash.slice(0, 7),
+            author,
+            message
           }
-          j++
-        }
+        })
       }
     }
 
@@ -309,32 +308,32 @@ ${chalk.yellow('Examples')}
    ${chalk.gray('created:')} ${date}${archive.git?.hash ? `\n   ${chalk.gray('commit:')}  ${archive.git.hash}` : ''}`)
   },
 
-  async clean() {
+  async clean(args) {
     const archives = await getArchives()
-    const uncommitted = archives.filter(a => !a.git?.hash)
+    if (archives.length === 0) {
+      console.log('No archives found')
+      return
+    }
+
+    // Get list of uncommitted archives
+    const uncommitted = execCmd('git ls-files --others --exclude-standard -- .archives/*.tar.gpg').split('\n').filter(Boolean)
     
     if (uncommitted.length <= 1) {
       console.log('No cleanup needed - at most one uncommitted archive')
       return
     }
 
-    // Keep the most recent uncommitted archive
-    const toDelete = uncommitted.slice(1)
-    
-    for (const archive of toDelete) {
-      const archivePath = path.join(ARCHIVE_DIR, archive.name)
-      unlinkSync(archivePath)
-      // Remove from git
-      try {
-        await execSync(`git rm -f "${archivePath}"`)
-      } catch (error) {
-        // If file wasn't in git, just log it was removed
-        console.log(`Removed ${archive.name}`)
+    // Keep only the most recent uncommitted archive
+    const latest = uncommitted.sort().reverse()[0]
+    for (const archive of uncommitted) {
+      if (archive !== latest) {
+        unlinkSync(path.join(ARCHIVE_DIR, archive))
+        console.log(`Removed ${archive}`)
       }
     }
 
-    console.log(`\nCleanup complete. Kept most recent uncommitted archive: ${uncommitted[0].name}`)
-    console.log(`\n${chalk.gray('Tip: Run')} git commit -m "chore: clean up uncommitted archives" ${chalk.gray('to save these changes')}`)
+    console.log(`\nCleanup complete. Kept most recent uncommitted archive: ${latest}\n`)
+    console.log('Tip: Run git commit -m "chore: clean up uncommitted archives" to save these changes')
   },
 
   async restore(args) {

@@ -5,6 +5,7 @@
 this is a complete rewrite of the [original ward](https://github.com/oeo/ward) project, expanding on its main idea with additional features and improved user experience.
 
 **why use ward2?**
+
 ward solves several critical problems in managing sensitive files:
 
 1. securely propagates environment variables and secrets between team members

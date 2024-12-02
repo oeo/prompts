@@ -70,8 +70,6 @@ WARD_ARCHIVE_FOLDER=my-archives
    ward restore                # Restore latest archive and extract to ./private
    ```
 
-![Listing archives](assets/ls.png)
-
 ![Viewing archive commit details](assets/ls-commit.png)
 
 ![Restoring an archive](assets/restore.png)

@@ -1,188 +1,188 @@
-# Encrypted Git Repository
+# ward
 
-A Git repository setup for storing encrypted files. Files in the `private/` directory are automatically encrypted into archives before being committed.
-
-## Features
-
-- Automatic archive creation and encryption of files in `private/` directory
-- Support for multiple GPG recipients (all recipients can decrypt files)
-- `.encignore` support for excluding files from archives (like `.gitignore`)
-- Clean working directory - files exist only in `private/`
-- Automatic restoration from latest archive on pull/checkout
-- Simple commands: `npm run pull`, `npm run restore`
-
-## Prerequisites
-
-- Node.js (v12 or later)
-- GPG installed and configured
-- Git
+A secure file archival tool that uses GPG encryption and Git versioning. Ward helps you maintain encrypted archives of sensitive files while keeping track of changes over time.
 
 ## Installation
 
-1. Clone and setup:
+1. Clone the repository
+2. Install dependencies:
    ```bash
-   git clone <repository-url>
-   cd <repository-name>
    npm install
-   npm run setup
    ```
-
-2. Configure GPG recipients in `.env`:
+3. Make sure you have GPG installed and configured
+4. Link the command:
    ```bash
-   # Required: Comma-separated list of GPG recipients who can decrypt files
-   # Use email or last 16 characters of key ID
-   GPG_RECIPIENTS=user1@example.com,3AA5C34371567BD2
-
-   # Optional: Your signing key if you have multiple
-   # GPG_KEY_ID=3AA5C34371567BD2
+   npm link
    ```
 
-3. Configure file exclusions in `.encignore`:
+## Basic Usage
+
+1. Put files in the `private` directory
+2. Create an encrypted archive:
    ```bash
-   # Files/patterns to exclude from archives
-   *.tmp
-   *.swp
-   .DS_Store
-   temp/
+   ward pack
    ```
-
-## Usage
-
-### Basic Workflow
-
-1. Always restore latest content first:
+3. Commit the archive:
    ```bash
-   npm run pull     # pull git changes and restore
-   # or
-   npm run restore  # just restore from latest archive
+   git add .archives/*.tar.gpg
+   git commit -m "add new archive"
    ```
-
-2. Work with files in `private/`:
+4. Access files:
    ```bash
-   vim private/notes.md
+   ward ls                     # List archives
+   ward cat latest/file.txt   # View file contents
+   ward restore              # Restore latest archive
    ```
 
-3. Commit changes:
+## Commands
+
+### ls - List archives
+```bash
+ward ls [options] [archive-ref]
+
+# Examples
+ward ls                  # List all archives
+ward ls --limit 5       # Show 5 most recent
+ward ls 2              # Show archive at index 2
+ward ls 66b           # Show archive with hash 66b7d91
+```
+
+Options:
+- `--json` - Output in JSON format
+- `--limit N` - Limit output to N entries (0 for unlimited)
+
+### cat - View file contents
+```bash
+ward cat <archive-path>
+
+# Examples
+ward cat latest/test.txt   # From latest archive
+ward cat 2/*.md           # All markdown files from index 2
+ward cat 66b/config.json  # From archive with hash 66b7d91
+```
+
+### cp - Copy files
+```bash
+ward cp <archive-path> <destination>
+
+# Examples
+ward cp latest/test.txt ./local/  # Copy to local directory
+ward cp 2/*.md ./docs/           # Copy all markdown files
+ward cp 66b/*.txt ./backup/      # Copy from specific archive
+```
+
+### less - View with pager
+```bash
+ward less <archive-path>
+
+# Examples
+ward less latest/test.txt
+ward less 2/*.md
+ward less 66b/config.json
+```
+
+### verify - Check integrity
+```bash
+ward verify [archive-ref]
+
+# Examples
+ward verify              # Verify latest
+ward verify 2           # Verify index 2
+ward verify 66b        # Verify hash 66b7d91
+```
+
+Options:
+- `--json` - Output in JSON format
+
+### restore - Extract files
+```bash
+ward restore [archive-ref]
+
+# Examples
+ward restore            # Latest archive
+ward restore 2         # Archive at index 2
+ward restore 66b      # Archive with hash 66b7d91
+```
+
+Options:
+- `--json` - Output in JSON format
+
+### pack - Create archive
+```bash
+ward pack [options]
+
+# Examples
+ward pack              # Create if changes detected
+ward pack --force     # Create regardless of changes
+```
+
+Options:
+- `--force` - Create archive even if no changes detected
+
+### clean - Remove old archives
+```bash
+ward clean  # Remove all but most recent uncommitted archive
+```
+
+## Archive References
+
+Archives can be referenced in three ways:
+
+1. **By Index Number**
    ```bash
-   git add .
-   git commit -m "update notes"
+   ward ls 2          # Second archive in list
+   ward ls 0         # Most recent archive
    ```
-   - Creates encrypted archive automatically
-   - Only commits the archive, not the files
-   - Excludes files matching `.encignore` patterns
 
-### File Exclusions
+2. **By Commit Hash**
+   ```bash
+   66b7d91 taky@1733107131    # Full commit
+   ward ls 66b               # Using first 3 chars
+   ward ls 66b7             # Using first 4 chars
+   ward ls 66b7d91          # Using full hash
+   ```
 
-The `.encignore` file works like `.gitignore` but for archives:
-- Files matching patterns still exist in `private/`
-- But they won't be included in archives
-- They won't be shared with other users
+3. **Special References**
+   ```bash
+   ward ls latest    # Most recent archive
+   ```
 
-Example `.encignore`:
+## File Paths
+
+Ward uses Unix-like paths to access files within archives:
 
 ```bash
-# Temp files
-*.tmp
-*.swp
-
-# System files
-.DS_Store
-Thumbs.db
-
-# Directories
-temp/
-cache/
-node_modules/
-
-# File types
-*.log
-*.bak
+latest/file.txt     # File from latest archive
+2/docs/*.md        # All markdown files from archive 2
+66b/config.json    # Config from archive with hash 66b7d91
 ```
 
-### Commands
+Notes:
+- Leading slash is optional
+- Glob patterns are supported
+- Paths are relative to archive root
 
-- `npm run pull`: Pull git changes and restore latest archive
-- `npm run restore`: Just restore from latest archive
-- `git pull`: Triggers restore from latest archive
-- `git checkout`: Triggers restore from latest archive
+## How It Works
 
-### Handling Conflicts
-
-If you get conflicts:
-1. Stash your changes: `git stash`
-2. Pull and restore: `npm run pull`
-3. Apply your changes: `git stash pop`
-4. Resolve conflicts
-5. Commit and push
-
-## Project Structure
-
-```
-.
-├── private/           # Your files (auto-encrypted)
-├── .archives/         # Encrypted archives
-├── bin/               # Helper scripts
-├── git-hooks/         # Git hook templates
-├── .env               # GPG configuration
-└── .encignore         # Archive exclusion patterns
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. "No public key" error:
-   - Check GPG_RECIPIENTS in .env matches your keys
-   - Verify keys exist: `gpg --list-keys`
-   - Import missing keys if needed
-
-2. Files not in archive:
-   - Check `.encignore` patterns
-   - Run `npm run restore` to verify
-   - Create new commit to generate new archive
-
-3. Content out of sync:
+1. Files are stored in `private/` directory
+2. `ward pack` creates a new archive:
+   - Files are tar'd together
+   - Archive is encrypted with GPG
+   - Encrypted archive is saved in `.archives/`
+3. Archives must be committed manually:
    ```bash
-   npm run restore  # force restore from latest
+   git add .archives/*.tar.gpg
+   git commit -m "add new archive"
    ```
+4. Git provides versioning and history
+5. Files can be accessed using ward commands
 
-4. Multiple GPG keys:
-   - Set GPG_KEY_ID in .env to specify key
-   - Use last 16 characters of key ID
+## Security
 
-### GPG Key Management
-
-1. Generate new key:
-   ```bash
-   gpg --full-generate-key
-   ```
-
-2. List keys:
-   ```bash
-   gpg --list-secret-keys --keyid-format LONG
-   ```
-
-3. Export public key:
-   ```bash
-   gpg --armor --export your.email@example.com
-   ```
-
-4. Import others' keys:
-   ```bash
-   gpg --import their-key.asc
-   ```
-
-## Security Best Practices
-
-- Never commit unencrypted files from `private/`
-- Keep `.env` private (it's gitignored)
-- Backup GPG keys securely
-- Use strong passphrases
-- Review GPG_RECIPIENTS periodically
-- Use `.encignore` for sensitive temp files
-
-## License
-
-MIT
+- All files are encrypted using GPG
+- Private keys never leave your system
+- Archives can be safely stored in Git
+- Each archive is independently encrypted
+- Clean working directory between sessions
 
 

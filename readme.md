@@ -1,20 +1,45 @@
 # ⌧ ward
 
-A secure file archival tool that uses GPG encryption and Git versioning. Ward helps you maintain encrypted archives of sensitive files while keeping track of changes over time.
+`ward` is a secure file archival tool that uses GPG encryption and Git versioning. It helps you maintain encrypted archives of sensitive files while keeping track of changes over time.
 
-## Manual install 
+## How It Works
 
-1. Clone the repository
-2. Install dependencies:
+1. Files are stored in `private/` (or `WARD_PRIVATE_FOLDER` if set) directory
+2. `ward pack` creates a new archive:
+   - Files are tar'd together
+   - Archive is encrypted with GPG
+   - Encrypted archive is saved in `.archives/` (or `WARD_ARCHIVE_FOLDER` if set)
+3. Archives must be committed manually:
    ```bash
-   npm install
+   ward pack
+   git commit -m "add new archive"
    ```
-3. Make sure you have GPG installed and configured
-4. The `ward` binary is in ./bin/ward
+4. Git provides versioning and history
+5. Files can be accessed using ward commands
 
-## Configuration
+## Security
 
-Ward can be configured using environment variables in your `.env` file:
+- All files are encrypted using GPG
+- Private keys never leave your system
+- Archives can be safely stored in Git
+- Each archive is independently encrypted
+
+## Installation
+
+```bash
+git clone https://github.com/oeo/ward.git
+cd ward
+npm install
+cp .env.example .env
+```
+
+The `ward` binary is in ./bin/ward
+
+![Main menu](assets/help.png)
+
+## Config 
+
+`ward` is configured using environment variables in your `.env` file:
 
 ### GPG Configuration
 - `WARD_GPG_KEY` (optional) - Specific GPG key to use for encryption/decryption
@@ -52,31 +77,26 @@ WARD_ARCHIVE_FOLDER=my-archives
 
 ## Usage 
 
-![Ward's main menu](assets/menu.png)
+Put files in the `./private` (or `WARD_PRIVATE_FOLDER` if set) directory
 
-1. Put files in the `./private` (or `WARD_PRIVATE_FOLDER` if set) directory
-2. Create an encrypted archive:
-   ```bash
-   ward pack
-   git commit -m "add new archive"
-   ```
+```bash
+ward pack
+git commit -m "add new archive"
+```
 
-![Creating and committing an archive](assets/pack-commit.png)
+Accessing files:
 
-3. Access files:
-   ```bash
-   ward ls                     # List archives
-   ward cat latest/file.txt    # View file contents
-   ward restore                # Restore latest archive and extract to ./private
-   ```
+```bash
+ward ls                     # List archives
+ward cat latest/file.txt    # View file contents
+ward restore                # Restore latest archive and extract to ./private
+```
 
 ![Viewing archive commit details](assets/ls-commit.png)
 
-![Restoring an archive](assets/restore.png)
-
 ## Commands
 
-### ls - List archives
+### ls - list archives
 ```bash
 ward ls [options] [archive-ref]
 
@@ -91,44 +111,52 @@ Options:
 - `--json` - Output in JSON format
 - `--limit N` - Limit output to N entries (0 for unlimited)
 
-### cat - View file contents
+![Listing archive contents for a non-current index](assets/ls-index.png)
+
+### cat - view archive file contents
 ```bash
 ward cat <archive-path>
 
 # Examples
-ward cat latest/test.txt     # From latest archive
-ward cat 2/*.md              # All markdown files from index 2
-ward cat 66b/config.json     # From archive with hash 66b7d91
-ward cat 66b7d91/config.json # From archive with hash 66b7d91
+ward cat latest/test.txt       # From latest archive
+ward cat 0/test.txt            # From index 0, same command as above essentially
+ward cat '2/*.md'              # All markdown files from archive index 2
+ward cat 66b/config.json       # From archive with commit hash 66b7d91
+ward cat 66b7d91/config.json   # From archive with commit hash 66b7d91
 ```
 
-### cp - Copy files
+### cp - copy files from archive
+This will copy files from an encrypted archive to a destination directory relative to the current directory.
+
 ```bash
 ward cp <archive-path> <destination>
 
 # Examples
 ward cp latest/test.txt ./local/   # Copy to local directory
 ward cp '2/*.md' ./docs/           # Copy all markdown files
-ward cp '66b/*.txt' ./backup/      # Copy from specific archive
+ward cp '66b/*.txt' ./backup/      # Copy from specific commit hash archive to ./backup    
 ```
 
-### less - View with pager
+### less - view with pager
 ```bash
 ward less <archive-path>
 
 # Examples
-ward less latest/test.txt
-ward less 2/*.md
+ward less latest/test.txt        # From latest archive
+ward less 0/test.txt             # From index 0, same command as above essentially
+ward less '2/*.md'
 ward less 66b/config.json
 ward less 66b7d91/config.json
 ```
 
-### verify - Check integrity
+### verify - check integrity
 ```bash
 ward verify [archive-ref]
 
 # Examples
 ward verify            # Verify latest
+ward verify 0          # Verify latest
+ward verify latest     # Verify latest
 ward verify 2          # Verify index 2
 ward verify 66b        # Verify hash 66b7d91
 ```
@@ -136,8 +164,10 @@ ward verify 66b        # Verify hash 66b7d91
 Options:
 - `--json` - Output in JSON format
 
-### restore - Extract files
+### restore - extract files
 This will restore the archive to the `private` directory.
+
+![Restoring an archive](assets/restore.png)
 
 ```bash
 ward restore [archive-ref]
@@ -145,14 +175,18 @@ ward restore [archive-ref]
 # Examples
 ward restore          # Latest archive
 ward restore 2        # Archive at index 2
-ward restore 66b      # Archive with hash 66b7d91
-ward restore 66b7d91  # Archive with hash 66b7d91
+ward restore 66b      # Archive with commit hash 66b7d91
+ward restore 66b7d91  # Archive with commit hash 66b7d91
 ```
 
 Options:
 - `--json` - Output in JSON format
 
-### pack - Create archive
+### pack - create archive
+Creates a new archive and commits it to the repository.
+
+![Creating and committing an archive](assets/pack-commit.png)
+
 ```bash
 ward pack [options]
 
@@ -164,34 +198,32 @@ ward pack --force     # Create regardless of changes
 Options:
 - `--force` - Create archive even if no changes detected
 
-### clean - Remove old archives
+### clean - remove old archives
 ```bash
 ward clean  # Remove all but most recent uncommitted archive
 ```
 
-## Archive References
+## Archive references
 
 Archives can be referenced in three ways:
 
-1. **By Index Number**
+1. **by index number**
    ```bash
    ward ls 0         # Most recent archive
    ward ls 1         # Second archive in list
    ```
-
-2. **By Commit Hash**
+2. **by commit hash**
    ```bash
-   ward ls 66b               # Using first 3 chars
-   ward ls 66b7              # Using first 4 chars
-   ward ls 66b7d91           # Using full hash
+   ward ls 66b       # Using first 3 chars
+   ward ls 66b7      # Using first 4 chars
+   ward ls 66b7d91   # Using full hash
    ```
-
-3. **Special References**
+3. **special**
    ```bash
    ward ls latest    # Most recent archive
    ```
 
-## File Paths
+## File paths
 
 Ward uses Unix-like paths to access files within archives:
 
@@ -200,32 +232,3 @@ latest/file.txt     # File from latest archive
 2/docs/*.md         # All markdown files from archive 2
 66b/config.json     # Config from archive with hash 66b7d91
 ```
-
-Notes:
-- Leading slash is optional
-- Glob patterns are supported
-- Paths are relative to archive root
-
-## How It Works
-
-1. Files are stored in `private/` directory
-2. `ward pack` creates a new archive:
-   - Files are tar'd together
-   - Archive is encrypted with GPG
-   - Encrypted archive is saved in `.archives/`
-3. Archives must be committed manually:
-   ```bash
-   ward pack
-   git add .archives/*
-   git commit -m "add new archive"
-   ```
-4. Git provides versioning and history
-5. Files can be accessed using ward commands
-
-## Security
-
-- All files are encrypted using GPG
-- Private keys never leave your system
-- Archives can be safely stored in Git
-- Each archive is independently encrypted
-- Clean working directory between sessions

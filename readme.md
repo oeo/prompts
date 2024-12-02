@@ -1,4 +1,4 @@
-<div align="center">
+<div align="left">
    <img src="assets/svg.svg" width="200" alt="ward2" />
 </div>
 

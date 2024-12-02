@@ -14,9 +14,23 @@ const PRIVATE_DIR = path.join(process.cwd(), 'private')
 // Helper functions
 function execCmd(cmd, showOutput = false) {
   if (showOutput) {
+    // For commands that should show their output directly
     return execSync(cmd, { encoding: 'utf8', stdio: 'inherit' })
   }
-  return execSync(cmd, { encoding: 'utf8', stdio: 'pipe' })
+  
+  // Capture and format the output
+  const output = execSync(cmd, { encoding: 'utf8', stdio: 'pipe' })
+  if (output.trim()) {
+    // Split output into lines and format each line
+    const formattedOutput = output.split('\n')
+      .filter(Boolean)
+      .map(line => `${chalk.gray('> ' + line)}`)
+      .join('\n')
+    if (formattedOutput) {
+      console.log(formattedOutput)
+    }
+  }
+  return output
 }
 
 // Spawn a command and handle its output in real-time
@@ -215,7 +229,8 @@ const COMMANDS = {
     ],
     examples: [
       ['verify', 'Verify latest archive'],
-      ['verify /2', 'Verify archive at index 2']
+      ['verify 2', 'Verify archive at index 2'],
+      ['verify 1234567890abcdef', 'Verify archive with commit hash 1234567890abcdef']
     ]
   },
   restore: {
@@ -226,7 +241,8 @@ const COMMANDS = {
     ],
     examples: [
       ['restore', 'Restore from latest archive'],
-      ['restore /2', 'Restore from archive at index 2']
+      ['restore 2', 'Restore from archive at index 2'],
+      ['restore 1234567890abcdef', 'Restore from archive with commit hash 1234567890abcdef']
     ]
   },
   pack: {
@@ -277,21 +293,41 @@ const commands = {
     }
 
     // Process archives
-    archives.forEach((archive, index) => {
+    const outputs = archives.map((archive, index) => {
       const size = formatSize(archive.size)
       const message = archive.git?.message || 'no commit info'
       const author = archive.git?.author || 'unknown'
-      const indexStr = `[${index}] `
-      const hash = archive.git?.hash ? 
-        `${chalk.blue(archive.git.hash)} ` : 
-        ''
+      const hash = archive.git?.hash || ''
       
-      // Combine both lines into one with a separator
-      const output = `${indexStr}${hash}${chalk.yellow(message)} └─ ${archive.name} • ${size} • ${chalk.green(author)}`
+      // Calculate relative time
+      const timestamp = parseInt(execCmd(`git show -s --format=%at ${hash}`))
+      const date = new Date(timestamp * 1000)
+      const now = new Date()
       
-      // Add single line break between entries, but not after the last one
-      console.log(output + (index < archives.length - 1 ? '\n' : ''))
+      const diffMs = now - date
+      const diffMins = Math.floor(diffMs / 60000)
+      const diffHrs = Math.floor(diffMins / 60)
+      const diffDays = Math.floor(diffHrs / 24)
+      
+      let timeAgo
+      if (diffMins < 1) {
+        timeAgo = 'just now'
+      } else if (diffMins < 60) {
+        timeAgo = `${diffMins} min${diffMins === 1 ? '' : 's'} ago`
+      } else if (diffHrs < 24) {
+        timeAgo = `${diffHrs} hr${diffHrs === 1 ? '' : 's'} ago`
+      } else {
+        timeAgo = `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
+      }
+      
+      return `${index} ${chalk.blue(hash)} • ${chalk.gray(`(${timeAgo})`)}
+${chalk.gray('└─')} filename   ${archive.name} (${size})
+   message    ${chalk.yellow(message.trim())}
+   author     ${chalk.green(author)}`
     })
+
+    // Join all outputs with a single newline
+    console.log(outputs.join('\n').trim())
   },
 
   async info(args) {
@@ -325,15 +361,7 @@ const commands = {
       
       // List contents
       const fileList = execCmd(`cd "${tempDir}" && tar tvf temp.tar`)
-      contents = fileList.split('\n')
-        .filter(Boolean)
-        .map(line => {
-          const parts = line.split(/\s+/)
-          const size = parts[2]
-          const date = `${parts[3]} ${parts[4]}`
-          const name = parts.slice(5).join(' ')
-          return { size, date, name }
-        })
+      contents = fileList.split('\n').filter(Boolean)
     } finally {
       // Clean up
       execCmd(`rm -rf "${tempDir}"`)
@@ -353,19 +381,17 @@ const commands = {
     const message = archive.git?.message || 'no commit info'
     const author = archive.git?.author || 'unknown'
     const hash = archive.git?.hash ? `${chalk.blue(archive.git.hash)} ` : ''
-    console.log(`${hash}${chalk.yellow(message)}
-└─ ${archive.name} • ${size} • ${chalk.green(author)}`)
+    console.log(`${hash}${chalk.yellow(message)} └─ ${archive.name} • ${size} • ${chalk.green(author)}\n`)
 
     // Show archive contents
-    console.log(`\n${chalk.gray('contents:')}`)
     contents.forEach(file => {
-      console.log(`   ${chalk.gray(file.size.padEnd(8))} ${chalk.gray(file.date.padEnd(16))} ${file.name}`)
+      console.log(file)
     })
   },
 
   async cat(args) {
     if (args._.length < 2) {
-      console.error('Usage: cat [options] <archive-path>')
+      console.error('Usage: cat [options] <archive/path>')
       process.exit(1)
     }
 
@@ -545,30 +571,52 @@ const commands = {
       const results = []
       let allValid = true
 
-      for (const archive of targetArchives) {
+      for (const [index, archive] of targetArchives.entries()) {
         const tempFile = path.join(tmpDir, 'temp.tar')
         try {
           // Decrypt archive
-          execCmd(`gpg -q --yes -d -o "${tempFile}" "${path.join(ARCHIVE_DIR, archive.name)}"`)
+          await spawnCmd('gpg', [
+            '--yes',
+            '-d',
+            '-o', tempFile,
+            path.join(ARCHIVE_DIR, archive.name)
+          ])
+          console.log() // Add single line break after GPG output
           
           // Verify tar contents
           execCmd(`tar tf "${tempFile}" >/dev/null 2>&1`)
           
           // Get commit info
-          const commitInfo = execCmd(`git show --no-patch --format="%h%n%an <%ae>%n%at%n%s" ${archive.git.hash}`).split('\n')
-          const [hash, author, timestamp, subject] = commitInfo
-          const date = new Date(parseInt(timestamp) * 1000).toISOString()
-            .replace(/[TZ]/g, ' ')
-            .trim()
+          const commitInfo = execCmd(`git show --no-patch --format="%h%n%an <%ae>%n%at%n%s" ${archive.git.hash} 2>/dev/null`).split('\n')
+          const [hash, author, timestamp, message] = commitInfo
+          const date = new Date(parseInt(timestamp) * 1000)
+          const now = new Date()
+          
+          // Calculate relative time
+          const diffMs = now - date
+          const diffMins = Math.floor(diffMs / 60000)
+          const diffHrs = Math.floor(diffMins / 60)
+          const diffDays = Math.floor(diffHrs / 24)
+          
+          let timeAgo
+          if (diffMins < 1) {
+            timeAgo = 'just now'
+          } else if (diffMins < 60) {
+            timeAgo = `${diffMins} min${diffMins === 1 ? '' : 's'} ago`
+          } else if (diffHrs < 24) {
+            timeAgo = `${diffHrs} hr${diffHrs === 1 ? '' : 's'} ago`
+          } else {
+            timeAgo = `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
+          }
 
           results.push({ name: archive.name, valid: true })
           
           if (!args.json) {
             const size = formatSize(archive.size)
-            console.log(`${chalk.green('✓')} ${chalk.yellow(subject)}
-└─ ${archive.name} • ${size} • ${chalk.green(author)}
-   ${chalk.gray('created:')} ${date}
-   ${chalk.gray('commit:')}  ${hash}`)
+            console.log(`${chalk.green('✓')} ${chalk.blue(hash)} • ${chalk.gray(`(${timeAgo})`)}
+${chalk.gray('└─')} filename   ${archive.name} (${size})
+   message    ${chalk.yellow(message.trim())}
+   author     ${chalk.green(author)}`)
           }
         } catch (error) {
           results.push({ name: archive.name, valid: false, error: error.message })
@@ -576,9 +624,9 @@ const commands = {
           
           if (!args.json) {
             const size = formatSize(archive.size)
-            console.log(`${chalk.red('✖')} ${chalk.yellow(archive.git.message)}
-└─ ${archive.name} • ${size} • ${chalk.green(archive.git.author)}
-   ${chalk.red('error:')} ${error.message}`)
+            console.log(`${chalk.red('✖')} ${archive.name} (${size})
+${chalk.gray('└─')} filename   ${archive.name} (${size})
+   error      ${chalk.red(error.message)}`)
           }
         } finally {
           // Clean up temp file

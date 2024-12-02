@@ -4,18 +4,18 @@
 
 ## How It Works
 
-1. Files are stored in `private/` (or `WARD_PRIVATE_FOLDER` if set) directory
-2. `ward pack` creates a new archive:
+- Files are stored in `private/` (or `WARD_PRIVATE_FOLDER` if set) directory
+- `ward pack` creates a new archive:
    - Files are tar'd together
    - Archive is encrypted with GPG
    - Encrypted archive is saved in `.archives/` (or `WARD_ARCHIVE_FOLDER` if set)
-3. Archives must be committed manually:
+- Archives must be committed manually:
    ```bash
    ward pack
    git commit -m "add new archive"
    ```
-4. Git provides versioning and history
-5. Files can be accessed using ward commands
+- Git provides versioning and history
+- Files can be accessed using `ward` commands
 
 ## Security
 

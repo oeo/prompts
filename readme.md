@@ -52,37 +52,25 @@ ward restore                # restore latest archive and extract to ./private
 ![main menu](assets/menu.png)
 
 ## configuration
-`ward` instances are configured using environment variables or in your local `.env` file:
+`ward` instances are configured using environment variables or in your local `.env` file.
 
-- `WARD_GPG_KEY` (optional) - specific GPG key to use for encryption/decryption
-  - format: last 16 characters of your key ID, email, or name
-  - if not set, uses your default GPG key
-- `WARD_GPG_RECIPIENTS` (optional) - additional GPG recipients who can decrypt files
-  - format: comma-separated list of emails or key IDs
-  - example: `user1@example.com,user2@example.com`
-  - if not set, encrypts only for `WARD_GPG_KEY` or default key
-- `WARD_PRIVATE_FOLDER` (optional) - custom private folder path
-  - default: `private`
-  - relative to project root
-  - contains the files to be encrypted
-
-- `WARD_ARCHIVE_FOLDER` (optional) - custom archive folder path
-  - default: `.archives`
-  - relative to project root
-  - stores the encrypted archives
-
-**example `.env` file**
+**example `.env`**
 
 ```env
-# use specific GPG key
+# format: last 16 characters of your key ID, email, or name
+# if not set, uses your default GPG key
 WARD_GPG_KEY=your.email@example.com
 
-# allow multiple recipients to decrypt
+# format: comma-separated list of emails or key IDs
+# if not set, encrypts only for `WARD_GPG_KEY` or default key
 WARD_GPG_RECIPIENTS=user1@example.com,user2@example.com
 
-# custom folder paths
-WARD_PRIVATE_FOLDER=secret-stuff
-WARD_ARCHIVE_FOLDER=my-archives
+# relative to project root or use an absolute path
+# this folder contains files that will be encrypted
+WARD_PRIVATE_FOLDER=vault
+
+# this folder contains the encrypted archives
+WARD_ARCHIVE_FOLDER=.vault_archives
 ```
 
 ## commands
@@ -238,7 +226,6 @@ latest/file.txt      # file from latest archive
 - all files are encrypted using gpg
 - private keys never leave your system
 - archives can be safely stored in git
-- each archive is independently encrypted
 
 ## @todo
 - [x] add support for GPG key passphrase

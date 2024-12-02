@@ -12,6 +12,7 @@ this is a complete rewrite of the [original ward](https://github.com/oeo/ward) p
 - [archive references](#archive-references)
 - [file paths](#file-paths)
 - [security](#security)
+- [@todo](#todo)
 
 ## manual install
 
@@ -20,7 +21,7 @@ this is a complete rewrite of the [original ward](https://github.com/oeo/ward) p
 3. `npm install` to install dependencies
 4. the `ward` binary is available in `./bin/ward`
 
-![main menu](assets/menu.png)
+![help menu](assets/help.png)
 
 ## quick overview
 
@@ -37,7 +38,9 @@ commit the archive.
 git commit -m "add new archive"
 ```
 
-access files:
+![creating and committing an archive](assets/pack-commit.png)
+
+**access files:**
 
 ```bash
 ward ls                     # list all archives
@@ -46,13 +49,11 @@ ward cat 0/test.txt         # view file contents from index 0 (same as latest)
 ward restore                # restore latest archive and extract to ./private 
 ```
 
-![creating and committing an archive](assets/pack-commit.png)
+![main menu](assets/menu.png)
 
 ## configuration
-
 `ward` instances are configured using environment variables or in your local `.env` file:
 
-### gpg
 - `WARD_GPG_KEY` (optional) - specific GPG key to use for encryption/decryption
   - format: last 16 characters of your key ID, email, or name
   - if not set, uses your default GPG key
@@ -60,8 +61,6 @@ ward restore                # restore latest archive and extract to ./private
   - format: comma-separated list of emails or key IDs
   - example: `user1@example.com,user2@example.com`
   - if not set, encrypts only for `WARD_GPG_KEY` or default key
-
-### folders
 - `WARD_PRIVATE_FOLDER` (optional) - custom private folder path
   - default: `private`
   - relative to project root
@@ -72,7 +71,7 @@ ward restore                # restore latest archive and extract to ./private
   - relative to project root
   - stores the encrypted archives
 
-example `.env` file:
+**example `.env` file**
 
 ```env
 # use specific GPG key
@@ -179,7 +178,7 @@ options:
 - `--json` - output in JSON format
 
 ### pack
-create a new archive based on the contents of the `private` directory.
+create a new archive based on the contents of the `private` directory. files included in the `.encignore` file (if it exists) are excluded from the archive.
 
 ```bash
 ward pack [options]
@@ -199,8 +198,6 @@ remove old archives
 ward clean  # remove all but most recent uncommitted archive
 ```
 
----
-
 ## archive references
 archives can be referenced in three ways:
 
@@ -212,9 +209,9 @@ archives can be referenced in three ways:
 
 2. **by commit hash**
    ```bash
-   ward ls 66b               # using first 3 chars
-   ward ls 66b7              # using first 4 chars
-   ward ls 66b7d91           # using full hash
+   ward ls 66b       # using first 3 chars
+   ward ls 66b7      # using first 4 chars
+   ward ls 66b7d91   # using full hash
    ```
 
 3. **special references**
@@ -223,14 +220,14 @@ archives can be referenced in three ways:
    ```
 
 ## file paths
-
-Ward uses Unix-like paths to access files within archives:
+ward uses unix-like paths to access files within archives:
 
 ```bash
-latest/file.txt     # file from latest archive
-0/file.txt          # file from index 0 (same as latest)
-2/docs/*.md         # all markdown files from archive index 2
-66b/config.json     # config from archive with commit hash 66b7d91
+latest/file.txt      # file from latest archive
+0/file.txt           # file from index 0 (same as latest)
+2/docs/*.md          # all markdown files from archive index 2
+66b/config.json      # config from archive with commit hash 66b7d91
+66b7d91/config.json  # config from archive with commit hash 66b7d91
 ```
 
 - leading slash is optional
@@ -238,8 +235,16 @@ latest/file.txt     # file from latest archive
 - paths are relative to archive root
 
 ## security
-
 - all files are encrypted using gpg
 - private keys never leave your system
 - archives can be safely stored in git
 - each archive is independently encrypted
+
+## @todo
+- [x] add support for GPG key passphrase
+- [ ] restructure so that the ward package can be imported into other projects easily
+- [ ] bin/ward should be smaller in terms of lines of code
+- [ ] dockerize to remove dependency and installation issues
+- [ ] add unit testing
+- [ ] add more examples
+- [ ] add more documentation

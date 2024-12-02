@@ -4,18 +4,33 @@
 
 ## How It Works
 
-- Files are stored in `private/` (or `WARD_PRIVATE_FOLDER` if set) directory
+- Files are stored in `WARD_PRIVATE_FOLDER` (or `./private` if not set) 
 - `ward pack` creates a new archive:
    - Files are tar'd together
    - Archive is encrypted with GPG
-   - Encrypted archive is saved in `.archives/` (or `WARD_ARCHIVE_FOLDER` if set)
-- Archives must be committed manually:
-   ```bash
-   ward pack
-   git commit -m "add new archive"
-   ```
+   - Encrypted archive is saved in `WARD_ARCHIVE_FOLDER` (or `./archives` if not set)
+
+```bash
+ward pack
+git commit -m "add new archive"
+```
+
 - Git provides versioning and history
-- Files can be accessed using `ward` commands
+- Archives can be accessed using `ward` commands
+  - `ward ls` - list all archives
+  - `ward cat` - view archive file contents
+  - `ward cp` - copy files from archive
+  - `ward less` - view archive file contents with pager
+  - `ward verify` - check an archive's integrity
+  - `ward restore` - restore an archive to the `WARD_PRIVATE_FOLDER`
+
+The utility can access any of the archives in the `WARD_ARCHIVE_FOLDER`. You can copy files from any previous archive to your current working directory without having to restore the entire archive.
+
+In the example below, we're copying a file from the archive with commit hash `66b7d91` to our desktop. `66b` isn't a folder, it's just the first 3 characters of the commit hash for that archive. (there are a few ways to reference archives, see [Archive references](#archive-references))
+
+```bash
+ward cp 66b/test.txt ~/Desktop
+```
 
 ## Security
 

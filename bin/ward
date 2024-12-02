@@ -181,7 +181,7 @@ async function getArchives() {
       .map(name => {
         try {
           // Get git info for each archive, but suppress debug output
-          const output = execSync(`git log -n 1 --format="%H|%an <%ae>|%s" -- .archives/${name} 2>/dev/null`, { encoding: 'utf8' })
+          const output = execSync(`git log -n 1 --format="%H|%an <%ae>|%s" -- ${ARCHIVE_DIR}/${name} 2>/dev/null`, { encoding: 'utf8' })
           const [hash, author, message] = output.split('|')
           const size = statSync(path.join(ARCHIVE_DIR, name)).size
 
@@ -714,8 +714,8 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
 
     try {
       // Clear private directory
-      execCmd('rm -rf ' + PRIVATE_DIR)
-      execCmd('mkdir -p ' + PRIVATE_DIR)
+      execCmd(`rm -rf "${PRIVATE_DIR}"`)
+      execCmd(`mkdir -p "${PRIVATE_DIR}"`)
 
       // Decrypt and extract archive
       const tempTar = path.join(ARCHIVE_DIR, 'temp.tar')
@@ -725,7 +725,7 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
         '-o', tempTar,
         path.join(ARCHIVE_DIR, archive.name)
       ])
-      execCmd(`tar -xf "${tempTar}" -C ${PRIVATE_DIR}`)
+      execCmd(`tar -xf "${tempTar}" -C "${PRIVATE_DIR}"`)
       execCmd(`rm "${tempTar}"`)
 
       if (args.json) {
@@ -782,7 +782,7 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
         .reverse()[0]
       
       if (latest) {
-        execCmd(`git add ".archives/${latest}"`)
+        execCmd(`git add "${path.join(ARCHIVE_DIR, latest)}"`)
         console.log(`\nStaged new archive: ${latest}`)
         console.log('\nTip: Run git commit -m "chore: add new archive" to save these changes')
       }
@@ -801,8 +801,7 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
       execCmd(`cd "${tempDir}" && tar xf temp.tar`)
 
       // Compare directories
-      const privateFolder = process.env.WARD_PRIVATE_FOLDER || 'private'
-      const diff = execCmd(`diff -r "${tempDir}/${privateFolder}" "${PRIVATE_DIR}" 2>&1 || true`)
+      const diff = execCmd(`diff -r "${path.join(tempDir, PRIVATE_DIR)}" "${PRIVATE_DIR}" 2>&1 || true`)
       if (!diff) {
         console.error('No changes detected in ' + PRIVATE_DIR + '. Use --force to create archive anyway.')
         process.exit(1)
@@ -838,7 +837,7 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
     }
 
     // Get list of uncommitted archives
-    const uncommitted = execCmd('git ls-files --others --exclude-standard -- .archives/*.tar.gpg').split('\n').filter(Boolean)
+    const uncommitted = execCmd(`git ls-files --others --exclude-standard -- "${ARCHIVE_DIR}/*.tar.gpg"`).split('\n').filter(Boolean)
     
     if (uncommitted.length <= 1) {
       console.log('No cleanup needed - at most one uncommitted archive')
@@ -849,7 +848,8 @@ ${chalk.gray('└─')} filename   ${archive.name} (${size})
     const latest = uncommitted.sort().reverse()[0]
     for (const archive of uncommitted) {
       if (archive !== latest) {
-        unlinkSync(path.join(ARCHIVE_DIR, archive))
+        const archivePath = path.join(ARCHIVE_DIR, path.basename(archive))
+        unlinkSync(archivePath)
         console.log(`Removed ${archive}`)
       }
     }

@@ -26,11 +26,11 @@ git commit -m "add new archive"
 
 The utility can access any of the archives in the `WARD_ARCHIVE_FOLDER`. You can copy files from any previous archive to your current working directory without having to restore the entire archive.
 
-In the example below, we're copying a file from the archive with commit hash `66b7d91` to our desktop. `66b` isn't a folder, it's just the first 3 characters of the commit hash for that archive. (there are a few ways to reference archives, see [Archive references](#archive-references))
-
 ```bash
 ward cp 66b/test.txt ~/Desktop
 ```
+
+In the example above, we're copying a file from the archive with commit hash `66b7d91` to our desktop. `66b` isn't a folder, it's just the first 3 characters of the commit hash for that archive. (there are a few ways to reference archives, see [Archive references](#archive-references))
 
 ## Security
 

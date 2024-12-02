@@ -15,11 +15,11 @@ try {
   // run validation
   console.log('Validating setup...')
   execSync('node bin/validate-encryption-setup.js', { stdio: 'inherit' })
-  
+
   // initialize archive
   console.log('Initializing archive...')
   execSync('node bin/init-archive.js', { stdio: 'inherit' })
-  
+
   // install git hooks
   console.log('Installing git hooks...')
   const hookFiles = readdirSync(path.join(process.cwd(), 'git-hooks'))
@@ -30,9 +30,9 @@ try {
     }
   }
   execSync('chmod +x .git/hooks/*', { stdio: 'inherit' })
-  
+
   console.log('Installation complete!')
 } catch (error) {
   console.error(`Installation failed: ${error.message}`)
   process.exit(1)
-} 
+}

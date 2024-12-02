@@ -8,8 +8,6 @@
 
 this is a complete rewrite of the [original ward](https://github.com/oeo/ward) project, expanding on its main idea with additional features and improved user experience.
 
-## contents
-
 - [why?](#why)
 - [quick start](#quick-start)
 - [configuration](#configuration)

@@ -10,7 +10,7 @@ this is a complete rewrite of the [original ward](https://github.com/oeo/ward) p
 
 ## contents
 
-- [why use it?](#why-use-it)
+- [why?](#why)
 - [quick start](#quick-start)
 - [configuration](#configuration)
 - [commands](#commands)
@@ -22,7 +22,7 @@ this is a complete rewrite of the [original ward](https://github.com/oeo/ward) p
 
 ---
 
-## why use it?
+## why?
 
 ward solves several critical problems in managing sensitive files:
 

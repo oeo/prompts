@@ -52,22 +52,29 @@ WARD_ARCHIVE_FOLDER=my-archives
 
 ## Usage 
 
-1. Put files in the `./private` directory
+![Ward's main menu](assets/menu.png)
+
+1. Put files in the `./private` (or `WARD_PRIVATE_FOLDER` if set) directory
 2. Create an encrypted archive:
    ```bash
    ward pack
-   ```
-3. Commit the archive:
-   ```bash
-   git add .archives/*.tar.gpg
    git commit -m "add new archive"
    ```
-4. Access files:
+
+![Creating and committing an archive](assets/pack-commit.png)
+
+3. Access files:
    ```bash
    ward ls                     # List archives
    ward cat latest/file.txt    # View file contents
    ward restore                # Restore latest archive and extract to ./private
    ```
+
+![Listing archives](assets/ls.png)
+
+![Viewing archive commit details](assets/ls-commit.png)
+
+![Restoring an archive](assets/restore.png)
 
 ## Commands
 

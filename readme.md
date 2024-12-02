@@ -1,10 +1,20 @@
-# ward2
+# ⌧ ward
 
-a secure file archival tool that uses GPG encryption and Git versioning. `ward` helps you maintain encrypted archives of sensitive files while keeping track of changes over time.
+a secure file archival tool that uses GPG encryption and Git versioning. ward helps you maintain encrypted archives of sensitive files while keeping track of changes over time.
 
 this is a complete rewrite of the [original ward](https://github.com/oeo/ward) project, expanding on its core functionality with additional features and improved user experience.
 
-## manual install 
+## contents
+
+- [manual install](#manual-install)
+- [configuration](#configuration)
+- [commands](#commands)
+- [archive references](#archive-references)
+- [file paths](#file-paths)
+- [how it works](#how-it-works)
+- [security](#security)
+
+## manual install
 
 1. clone the repository
 2. make sure you have `gpg` installed and configured

@@ -10,15 +10,12 @@
     "setup": "node bin/setup.js",
     "pull": "node bin/pull.js",
     "restore": "node bin/restore-from-archive.js",
-    "test": "node bin/test.js",
-    "watch": "node bin/watch-private.js"
+    "test": "node bin/test.js"
   },
   "dependencies": {
-    "boxen": "^7.1.1",
     "chalk": "^5.3.0",
     "dotenv": "^16.3.1",
     "minimatch": "^10.0.1",
-    "minimist": "^1.2.8",
-    "ora": "^7.0.1"
+    "minimist": "^1.2.8"
   }
 }

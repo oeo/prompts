@@ -72,7 +72,7 @@ ward restore                # restore latest archive and extract to ./private
 ![main menu](assets/menu.png)
 
 ## config
-`ward` instances are configured using environment variables or in your local `.env` file.
+`ward` is configured using environment variables or in your local `.env` file.
 
 **example env file**
 

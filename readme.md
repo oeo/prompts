@@ -19,7 +19,7 @@ ward solves several critical problems in managing sensitive files:
 
 ward builds on proven encryption standards rather than implementing custom cryptography.
 
-ward is great for storing things in your repositories in a secure and private manner, and particularly valuable as a secure backup solution as well.
+it's great for storing things in your repositories in a secure and private manner, and particularly valuable as a secure backup solution as well.
 
 1. securely keep updated project-specific environment secrets in your repository
 1. store recovery codes for all your critical services

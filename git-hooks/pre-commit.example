@@ -21,12 +21,12 @@ if git diff --cached --name-only | grep -q "^.archives/temp"; then
   exit 1
 fi
 
-# Stage only the most recent archive
+# Stage only the most recent archive and remove others
 latest_archive=$(ls -t .archives/*.tar.gpg 2>/dev/null | head -n1)
 if [ -n "$latest_archive" ]; then
-  git add "$latest_archive"
-  # Remove any other archives from staging
-  for archive in $(git diff --cached --name-only | grep "^.archives/.*\.tar\.gpg$" | grep -v "$(basename "$latest_archive")"); do
-    git restore --staged "$archive"
+  # Remove all archives except the latest
+  for old_archive in $(ls .archives/*.tar.gpg | grep -v "$(basename "$latest_archive")"); do
+    rm -f "$old_archive"
   done
+  git add "$latest_archive"
 fi 

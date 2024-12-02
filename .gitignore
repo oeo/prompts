@@ -53,3 +53,5 @@ private/*
 !.archives/*.tar.gpg
 
 custom-private-folder
+
+vault

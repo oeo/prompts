@@ -1,19 +1,12 @@
 #!/bin/sh
 
+# Force remove any private files from git tracking
+git ls-files private/ | xargs -r git rm --cached
+
 # Check if any files in private/ have changed
-if git diff --cached --name-only | grep -q "^private/"; then
+if [ -d "private" ] && [ "$(ls -A private/)" ]; then
   echo "Creating encrypted archive..."
   node bin/create-encrypted-archive.js || exit 1
-
-  # Unstage all files from private directory
-  git restore --staged private/
-fi
-
-# Prevent committing unencrypted files from private/
-if git diff --cached --name-only | grep -q "^private/"; then
-  echo "Error: Cannot commit unencrypted files from private/"
-  echo "Hint: Only the encrypted archive should be committed"
-  exit 1
 fi
 
 # Ensure we're not committing temp files

@@ -23,15 +23,10 @@ try {
   for (const file of hookFiles) {
     if (file.endsWith('.example')) {
       const hookName = file.replace('.example', '');
-      execSync(`mv git-hooks/${file} .git/hooks/${hookName}`, { stdio: 'inherit' });
+      execSync(`cp git-hooks/${file} .git/hooks/${hookName}`, { stdio: 'inherit' });
+      execSync(`chmod +x .git/hooks/${hookName}`, { stdio: 'inherit' });
     }
   }
-
-  execSync('chmod +x .git/hooks/*', { stdio: 'inherit' });
-
-  // create symlink to bin script
-  console.log('Creating symlink to bin script...');
-  execSync(`ln -s ${path.resolve('./bin/cli.js')} ${path.resolve('./cli')}`, { stdio: 'inherit' });
 
   console.log('Installation complete!');
 } catch (error) {

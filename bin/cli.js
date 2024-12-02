@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execSync } from 'child_process'
-import { existsSync, readdirSync, statSync, unlinkSync } from 'fs'
+import { existsSync, readdirSync, statSync, unlinkSync, mkdirSync } from 'fs'
 import path from 'path'
 import chalk from 'chalk'
 import Table from 'cli-table3'
@@ -10,6 +10,7 @@ import minimist from 'minimist'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ARCHIVE_DIR = path.join(process.cwd(), '.archives')
+const PRIVATE_DIR = path.join(process.cwd(), 'private')
 
 // Styling constants - more subtle colors
 const styles = {
@@ -38,9 +39,12 @@ function error(message) {
 function execCmd(command, showOutput = false) {
   try {
     const output = execSync(command, { encoding: 'utf8', stdio: showOutput ? 'inherit' : ['inherit', 'pipe', 'pipe'] })
-    return output.trim()
+    return output ? output.trim() : ''
   } catch (e) {
-    error(e.message)
+    if (e.status !== 0) {
+      error(e.message)
+    }
+    return ''
   }
 }
 
@@ -103,28 +107,17 @@ function parseArchiveDate(filename) {
 
 function getArchives() {
   try {
-    // Get all commits that added archives with their details
-    const log = execCmd(`
-      git log --diff-filter=A --format="commit: %H%n\
-author: %an <%ae>%n\
-message: %s%n\
-files:" --name-only -- .archives/*.tar.gpg
-    `)
-    if (!log) return []
+    // Get all commits that modified .archives directory
+    const log = execCmd('git log --format="%H|%an <%ae>|%s" -- .archives/').split('\n')
+    if (!log[0]) return []
 
     const archives = []
-    const commits = log.split('\ncommit: ')
-    
-    for (const commit of commits) {
-      if (!commit.trim()) continue
-
-      const lines = commit.split('\n')
-      const hash = lines[0].trim()
-      const author = lines.find(l => l.startsWith('author: '))?.substring(8)
-      const message = lines.find(l => l.startsWith('message: '))?.substring(9)
-      const files = lines.slice(lines.indexOf('files:') + 1)
-        .filter(f => f.trim() && f.endsWith('.tar.gpg'))
-
+    for (const line of log) {
+      const [hash, author, message] = line.split('|')
+      
+      // Get archive files from this commit
+      const files = execCmd(`git ls-tree -r --name-only ${hash} -- .archives/*.tar.gpg`).split('\n').filter(Boolean)
+      
       for (const archiveFile of files) {
         // Get file size at commit time
         const size = execCmd(`git ls-tree -r -l ${hash} -- ${archiveFile} | awk '{print $4}'`)
@@ -202,13 +195,16 @@ ${chalk.yellow('Commands')}
   ${chalk.green('restore')}     \t\t${chalk.gray('Restore from archive by index or commit hash')}
     └─ <index>
     └─ <hash>
+  ${chalk.green('pack')}        \t\t${chalk.gray('Create and stage a new archive')}
+    └─ [--force]
   ${chalk.green('clean')}       \t\t${chalk.gray('Remove uncommitted archives')}
   ${chalk.green('help')} 
 
 ${chalk.yellow('Examples')}
   ls --limit=5      \t${chalk.gray('# Show 5 most recent')}
   info 2           \t${chalk.gray('# Show info for second most recent')}
-  restore a321160   \t${chalk.gray('# Restore by commit hash')}`)
+  restore a321160   \t${chalk.gray('# Restore by commit hash')}
+  pack --force      \t${chalk.gray('# Create archive even if no changes')}`)
   },
 
   async ls(args) {
@@ -501,6 +497,86 @@ ${chalk.yellow('Examples')}
       }
     } finally {
       await execSync(`rm -rf "${tmpDir}"`)
+    }
+  },
+
+  async pack(args) {
+    // Check if private directory exists and has files
+    if (!existsSync(ARCHIVE_DIR)) {
+      mkdirSync(ARCHIVE_DIR, { recursive: true })
+    }
+    if (!existsSync(PRIVATE_DIR)) {
+      mkdirSync(PRIVATE_DIR, { recursive: true })
+    }
+
+    // Check if there are any files in private
+    const files = readdirSync(PRIVATE_DIR)
+    if (files.length === 0) {
+      console.error('No files found in private directory')
+      process.exit(1)
+    }
+
+    // Get latest archive
+    const archives = readdirSync(ARCHIVE_DIR)
+      .filter(f => f.endsWith('.tar.gpg'))
+      .sort()
+      .reverse()
+
+    // Always create archive if no previous archive exists
+    if (archives.length === 0 || args.force) {
+      console.log('Creating encrypted archive...')
+      execCmd('node bin/create-encrypted-archive.js', true)
+      
+      // Stage the new archive
+      const latest = readdirSync(ARCHIVE_DIR)
+        .filter(f => f.endsWith('.tar.gpg'))
+        .sort()
+        .reverse()[0]
+      
+      if (latest) {
+        execCmd(`git add ".archives/${latest}"`)
+        console.log(`\nStaged new archive: ${latest}`)
+        console.log('\nTip: Run git commit -m "chore: add new archive" to save these changes')
+      }
+      return
+    }
+
+    // Compare latest archive contents with current private directory
+    const latestArchive = archives[0]
+    const tempDir = path.join(ARCHIVE_DIR, 'temp-compare')
+    try {
+      // Create temp directory
+      mkdirSync(tempDir, { recursive: true })
+      
+      // Decrypt latest archive
+      execCmd(`gpg --yes -d -o "${path.join(tempDir, 'temp.tar')}" "${path.join(ARCHIVE_DIR, latestArchive)}"`)
+      execCmd(`cd "${tempDir}" && tar xf temp.tar`)
+
+      // Compare directories
+      const diff = execCmd(`diff -r "${tempDir}/private" "${PRIVATE_DIR}" 2>&1 || true`)
+      if (!diff) {
+        console.error('No changes detected in private directory. Use --force to create archive anyway.')
+        process.exit(1)
+      }
+
+      // Changes detected, create new archive
+      console.log('Changes detected. Creating encrypted archive...')
+      execCmd('node bin/create-encrypted-archive.js', true)
+      
+      // Stage the new archive
+      const latest = readdirSync(ARCHIVE_DIR)
+        .filter(f => f.endsWith('.tar.gpg'))
+        .sort()
+        .reverse()[0]
+      
+      if (latest) {
+        execCmd(`git add ".archives/${latest}"`)
+        console.log(`\nStaged new archive: ${latest}`)
+        console.log('\nTip: Run git commit -m "chore: add new archive" to save these changes')
+      }
+    } finally {
+      // Clean up temp directory
+      execCmd(`rm -rf "${tempDir}"`)
     }
   }
 }

@@ -3,26 +3,8 @@
 # Force remove any private files from git tracking
 git ls-files private/ | xargs -r git rm --cached
 
-# Remove any staged archives
-git restore --staged .archives/*.tar.gpg 2>/dev/null || true
-
-# Clean up any uncommitted archives except the most recent one
-node bin/cli.js clean
-
-# Check if any files in private/ have changed
-if [ -d "private" ] && [ "$(ls -A private/)" ]; then
-  echo "Creating encrypted archive..."
-  node bin/create-encrypted-archive.js || exit 1
-fi
-
 # Ensure we're not committing temp files
 if git diff --cached --name-only | grep -q "^.archives/temp"; then
   echo "Error: Cannot commit temporary archive files"
   exit 1
-fi
-
-# Stage the latest archive without removing others
-latest_archive=$(ls -t .archives/*.tar.gpg 2>/dev/null | head -n1)
-if [ -n "$latest_archive" ]; then
-  git add "$latest_archive"
 fi 
